@@ -26,11 +26,11 @@ add_custom_command(
 )
 
 install(TARGETS modemservice
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-install(FILES modemservice
-    sgy.pine.modem.conf DESTINATION /etc/dbus-1/system.d/
+install(FILES sgy.pine.modem.conf
+    DESTINATION /etc/dbus-1/system.d/
 )
 
 target_link_libraries(modemservice SettingsLib Qt6::SerialPort sdbus-c++)
