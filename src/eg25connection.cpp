@@ -3,7 +3,6 @@
 #include <unistd.h>
 
 #include <QtSerialPort/QSerialPortInfo>
-#include <iostream>
 #include <format>
 
 #define MAX_TIMEOUT 100.0
@@ -57,12 +56,67 @@ void eg25Connection::setupDbusConnection(){
         reply << this->isModemAvailable;
         reply.send();
     };
+
     sendCommandL = [this](sdbus::MethodCall call){this->sendCommand(call);};
 
     dbusObject->registerMethod(DBUS_INTERFACE_NAME, "modem_available", "", "b", modemAvailableL);
     dbusObject->registerMethod(DBUS_INTERFACE_NAME, "pin_enter", "s", "s", sendCommandL);
     dbusObject->registerMethod(DBUS_INTERFACE_NAME, "pin_query", "", "s", sendCommandL);
     dbusObject->registerMethod(DBUS_INTERFACE_NAME, "send_command", "s", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "display_product_info", "", "s", sendCommandL);
+
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "enable_low_power", "s", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "enable_packet_service", "s", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "set_ue_functionality", "s", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "ue_functionality_test", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "get_ue_functionality", "", "s", sendCommandL);
+
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "request_mfg_id_test", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "request_mfg_id", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "request_model_id_test", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "request_model_id", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "request_fw_rev_test", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "request_fw_rev", "", "s", sendCommandL);
+
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "request_imei_or_sn_test", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "request_imei_or_sn", "s", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "request_imei", "", "s", sendCommandL);
+
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "factory_reset", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "get_current_cfg", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "store_cfg", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "load_cfg", "", "s", sendCommandL);
+
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "echo_result_code", "s", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "set_response_fmt", "s", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "set_echo", "s", "s", sendCommandL);
+
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "rerun_prev_cmd", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "get_cmd_terminator", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "get_response_fmt_char", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "set_response_fmt_char", "s", "s", sendCommandL);
+
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "get_cmd_edit_char", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "set_cmd_edit_char", "s", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "set_connect_result_fmt", "s", "s", sendCommandL);
+
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "error_fmt_test", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "get_error_fmt", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "set_error_fmt", "s", "s", sendCommandL);
+
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "charset_test", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "get_charset", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "set_charset", "s", "s", sendCommandL);
+
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "urc_cfg_test", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "set_urc_cfg", "s", "s", sendCommandL);
+
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "report_spec_urc_test", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "set_report_spec_urc", "s", "s", sendCommandL);
+
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "get_uart_mode", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "set_uart_mode", "s", "s", sendCommandL);
+
     dbusObject->finishRegistration();
     dbusConnection->enterEventLoopAsync();
 }
