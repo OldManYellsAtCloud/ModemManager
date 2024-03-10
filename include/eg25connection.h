@@ -41,6 +41,8 @@ class eg25Connection
         {"pin_test", "AT+CPIN=?"},
         {"pin_query", "AT+CPIN?"},
         {"pin_enter", "AT+CPIN={}"}, // arg: pin, e.g "1234"
+        {"low_power_test", "AT+QSCLK=?"},
+        {"get_low_power_state", "AT+QSCLK?"},
         {"enable_low_power", "AT+QSCLK={}"},
         {"enable_packet_service_test", "AT+CGATT=?"},
         {"get_packet_service_status", "AT+CGATT?"},
@@ -483,6 +485,32 @@ class eg25Connection
         {"play_test_far", "AT+QWTTS={}"},
         {"audio_cfg_test", "AT+QAUDCFG=?"},
         {"get_set_audio_cfg", "AT+QAUDCFG={}"},
+        {"play_media_test", "AT+QAUDPLAY=?"},
+        {"get_play_media_status", "AT+QAUDPLAY?"},
+        {"play_media", "AT+QAUDPLAY={}"},
+        {"audio_play_gain_test", "AT+QAUDPLAYGAIN=?"},
+        {"get_audio_play_gain", "AT+QAUDPLAYGAIN?"},
+        {"set_audio_play_gain", "AT+QAUDPLAYGAIN={}"},
+        {"audio_rec_gain_test", "AT+QAUDRDGAIN=?"},
+        {"get_audio_rec_gain", "AT+QAUDRDGAIN?"},
+        {"set_audio_rec_gain", "AT+QAUDRDGAIN={}"},
+        {"acdb_file_test", "AT+QACDBLOAD=?"},
+        {"list_acdb_files", "AT+QACDBLOAD?"},
+        {"load_acdb_file", "AT+QACDBLOAD={}"},
+        {"read_acdb_file_test", "AT+QACDBREAD=?"},
+        {"read_acdb_file", "AT+QACDBREAD={}"},
+        {"del_acdb_file_test", "AT+ACDBDEL=?"},
+        {"del_acdb_file", "AT+ACDBDEL={}"},
+        // hw
+        {"power_down_test", "AT+QPOWD=?"},
+        {"power_down", "AT+QPOWD"},
+        {"clock_test", "AT+CCLK=?"},
+        {"get_time", "AT+CCLK?"},
+        {"set_time", "AT+CCLK={}"},
+        {"batt_voltage_test", "AT+CBC=?"},
+        {"get_batt_voltage", "AT+CBC"},
+        {"adc_test", "AT+QADC=?"},
+        {"read_adc", "AT+QADC={}"}
     };
 
 public:
