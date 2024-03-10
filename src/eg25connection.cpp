@@ -335,9 +335,9 @@ void eg25Connection::setupDbusConnection(){
     dbusObject->registerMethod(DBUS_INTERFACE_NAME, "umts_qos_profile_min_test", "", "s", sendCommandL);
     dbusObject->registerMethod(DBUS_INTERFACE_NAME, "get_umts_qos_profile_min", "", "s", sendCommandL);
     dbusObject->registerMethod(DBUS_INTERFACE_NAME, "set_umts_qos_profile_min", "s", "s", sendCommandL);
-    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "pdp_context_test", "", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "pdp_context_status_test", "", "s", sendCommandL);
     dbusObject->registerMethod(DBUS_INTERFACE_NAME, "get_pdp_context_status", "", "s", sendCommandL);
-    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "get_pdp_context_status", "s", "s", sendCommandL);
+    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "set_pdp_context_status", "s", "s", sendCommandL);
     dbusObject->registerMethod(DBUS_INTERFACE_NAME, "data_state_test", "", "s", sendCommandL);
     dbusObject->registerMethod(DBUS_INTERFACE_NAME, "set_data_state", "s", "s", sendCommandL);
     dbusObject->registerMethod(DBUS_INTERFACE_NAME, "get_pdp_addr_test", "", "s", sendCommandL);
