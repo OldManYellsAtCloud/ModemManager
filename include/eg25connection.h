@@ -7,6 +7,7 @@
 #include <sdbus-c++/sdbus-c++.h>
 #include <functional>
 #include <string_view>
+#include <condition_variable>
 
 #include <map>
 
@@ -24,6 +25,8 @@ class eg25Connection
     std::unique_ptr<sdbus::IConnection> dbusConnection;
     std::unique_ptr<sdbus::IObject> dbusObject;
 
+    bool enableLogging_;
+
     void setupDbusConnection();
     void sendSignal(const std::string& content);
     void sendSignal(bool present);
@@ -33,6 +36,7 @@ class eg25Connection
     void waitForModem(const std::string& modemName);
     void urcLoop(std::stop_token st);
     std::string lookupModemCommand(sdbus::MethodCall& call);
+    void logModemData(std::string s);
 
     std::function<void(sdbus::MethodCall)> modemAvailableL;
     std::function<void(sdbus::MethodCall)> sendCommandL;
@@ -514,7 +518,7 @@ class eg25Connection
     };
 
 public:
-    explicit eg25Connection(const std::string& modemName);
+    explicit eg25Connection(const std::string& modemName, const bool& enableLogging = false);
     ~eg25Connection();
     void stop_urc_loop();
 };

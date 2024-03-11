@@ -16,6 +16,8 @@ endif()
 find_package(Qt6 REQUIRED COMPONENTS SerialPort)
 find_package(sdbus-c++ REQUIRED)
 # find_package(sdbus-c++-tools REQUIRED)
+find_package(SettingsLib REQUIRED)
+find_package(LogLibrary REQUIRED)
 
 qt_add_executable(modemservice src/main.cpp
                                src/eg25connection.cpp
@@ -34,7 +36,6 @@ if (build_ui)
     target_link_libraries(modemservice PRIVATE Qt6::Quick)
 endif()
 
-
 add_custom_command(
     OUTPUT modemservice-client-glue.h modemservice-server-glue.h
     COMMAND SDBusCpp::sdbus-c++-xml2cpp ${PROJECT_SOURCE_DIR}/dbus/modemservice-bindings.xml
@@ -42,6 +43,7 @@ add_custom_command(
     DEPENDS dbus/modemservice-bindings.xml
     COMMENT "Generating D-Bus interfaces for ${PROJECT_NAME}."
 )
+
 
 install(TARGETS modemservice
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -52,4 +54,3 @@ install(FILES sgy.pine.modem.conf
 )
 
 target_link_libraries(modemservice PRIVATE SettingsLib Qt6::SerialPort sdbus-c++)
-

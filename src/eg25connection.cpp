@@ -4,6 +4,7 @@
 
 #include <QtSerialPort/QSerialPortInfo>
 #include <format>
+#include <loglibrary.h>
 
 #define MAX_TIMEOUT 100.0
 #define DBUS_SERVICE_NAME  "sgy.pine.modem"
@@ -21,7 +22,8 @@ bool isTemplate(const std::string& s){
     return s.find(FORMAT_TEMPLATE_CHARACTER) != std::string::npos;
 }
 
-eg25Connection::eg25Connection(const std::string& modemName)
+eg25Connection::eg25Connection(const std::string& modemName, const bool& enableLogging):
+    enableLogging_{enableLogging}
 {
     setupDbusConnection();
     sendSignal(isModemAvailable);
@@ -534,6 +536,14 @@ std::string eg25Connection::lookupModemCommand(sdbus::MethodCall &call){
     return cmd;
 }
 
+void eg25Connection::logModemData(std::string s)
+{
+    if (!enableLogging_)
+        return;
+
+    LOG("Modem data: {}", s);
+}
+
 void eg25Connection::sendCommand(sdbus::MethodCall &call)
 {
     std::string cmd = lookupModemCommand(call);
@@ -543,6 +553,7 @@ void eg25Connection::sendCommand(sdbus::MethodCall &call)
         call >> arg;
         cmd = std::vformat(cmd, std::make_format_args(arg));
     }
+    logModemData(cmd);
 
     std::string response = writeData(cmd);
 
@@ -586,6 +597,7 @@ std::string eg25Connection::writeData(std::string cmd)
     commandWaiting = false;
     serialFree.notify_one();
 
+    logModemData(response);
     return response;
 }
 
@@ -600,6 +612,7 @@ void eg25Connection::urcLoop(std::stop_token st)
 
         if (serialPort->waitForReadyRead(200)) {
             buffer = serialPort->readAll().data();
+            logModemData(buffer);
             serialPort->clear();
             sendSignal(buffer);
         }

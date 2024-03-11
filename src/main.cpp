@@ -5,6 +5,7 @@
 #include <csignal>
 #include <settingslib.h>
 #include <memory>
+#include <loglibrary.h>
 
 #ifdef UI_ENABLED
 #include <QGuiApplication>
@@ -39,17 +40,28 @@ void displayUi(int argc, char* argv[]){
 
 int main(int argc, char* argv[])
 {
+    bool debugMode = false;
+    bool logRequests = false;
     SettingsLib settings {CONFIG_FOLDER};
     std::string modemPath {settings.getValue("modem", "path")};
     assert((void("Could not get modemPath"), !modemPath.empty()));
 
+    for (int i = 1; i < argc; ++i){
+        if (strncmp(argv[i], "--debug", 7) == 0)
+            debugMode = true;
+        else if (strncmp(argv[i], "--logRequests", 13) == 0)
+            logRequests = true;
+        else
+            LOG("Unknown argument: {}", argv[i]);
+    }
+
     signal(SIGTERM, finishHandler);
     signal(SIGINT, finishHandler);
 
-    ec = std::make_unique<eg25Connection>(modemPath);
+    ec = std::make_unique<eg25Connection>(modemPath, logRequests);
 
 #ifdef UI_ENABLED
-    if (argc > 1 && strncmp(argv[1], "--debug", 7) == 0)
+    if (debugMode)
         displayUi(argc, argv);
 #endif
     while(true)
