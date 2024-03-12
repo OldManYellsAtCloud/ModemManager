@@ -21,6 +21,7 @@ std::unique_ptr<eg25Connection> ec;
 void finishHandler(int signum){
     std::cout << "Signal received: " << signum << std::endl;
     ec->stop_urc_loop();
+    exit(0);
 }
 
 #ifdef UI_ENABLED
