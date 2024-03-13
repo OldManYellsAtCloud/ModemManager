@@ -47,6 +47,14 @@ void eg25Connection::stop_urc_loop()
     urcThread.request_stop();
 }
 
+#ifdef UI_ENABLED
+void eg25Connection::sendDebugCommand(std::string cmd)
+{
+    logModemData(cmd);
+    writeData(cmd);
+}
+#endif
+
 void eg25Connection::setupDbusConnection(){
     dbusConnection = sdbus::createSystemBusConnection(DBUS_SERVICE_NAME);
     dbusObject = sdbus::createObject(*dbusConnection, DBUS_OBJECT_PATH);
@@ -538,6 +546,9 @@ std::string eg25Connection::lookupModemCommand(sdbus::MethodCall &call){
 
 void eg25Connection::logModemData(std::string s)
 {
+#ifdef UI_ENABLED
+    emit modemResponseArrived(s);
+#endif
     if (!enableLogging_)
         return;
 
@@ -591,8 +602,8 @@ std::string eg25Connection::writeData(std::string cmd)
 
     commandWaiting = true;
     std::lock_guard<std::mutex> lock{serialMutex};
-    int res = serialPort->write(cmd.c_str());
-    serialPort->waitForBytesWritten(300000);
+    serialPort->write(cmd.c_str());
+    serialPort->waitForBytesWritten();
     response = getResponse(300000);
     commandWaiting = false;
     serialFree.notify_one();
@@ -609,7 +620,6 @@ void eg25Connection::urcLoop(std::stop_token st)
     while(!st.stop_requested()){
         std::unique_lock<std::mutex> lock{serialMutex};
         serialFree.wait(lock, [&]{return !commandWaiting;});
-
         if (serialPort->waitForReadyRead(200)) {
             buffer = serialPort->readAll().data();
             logModemData(buffer);

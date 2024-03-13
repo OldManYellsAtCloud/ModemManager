@@ -25,7 +25,10 @@ void finishHandler(int signum){
 }
 
 #ifdef UI_ENABLED
+#include "commandlistmodel.h"
+
 void displayUi(int argc, char* argv[]){
+    qmlRegisterType<CommandListModel>("org.gspine.modem", 1, 0, "CommandListModel");
     QGuiApplication app(argc, argv);
     QQmlApplicationEngine engine;
     const QUrl url(u"qrc:/ModemService/qml/Main.qml"_qs);

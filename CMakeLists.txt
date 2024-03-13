@@ -16,12 +16,14 @@ endif()
 find_package(Qt6 REQUIRED COMPONENTS SerialPort)
 find_package(sdbus-c++ REQUIRED)
 # find_package(sdbus-c++-tools REQUIRED)
-find_package(SettingsLib REQUIRED)
-find_package(LogLibrary REQUIRED)
+find_package(SettingsLib)
+find_package(LogLibrary)
 
 qt_add_executable(modemservice src/main.cpp
                                src/eg25connection.cpp
                                include/eg25connection.h
+                               include/commandlistmodel.h
+                               src/commandlistmodel.cpp
                                sgy.pine.modem.conf)
 
 
