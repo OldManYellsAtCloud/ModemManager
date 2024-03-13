@@ -7,11 +7,6 @@
 #include <memory>
 #include <loglibrary.h>
 
-#ifdef UI_ENABLED
-#include <QGuiApplication>
-#include <QQmlApplicationEngine>
-#endif
-
 #include "eg25connection.h"
 
 #define CONFIG_FOLDER  "/etc"
@@ -25,6 +20,8 @@ void finishHandler(int signum){
 }
 
 #ifdef UI_ENABLED
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
 #include "commandlistmodel.h"
 
 void displayUi(int argc, char* argv[]){

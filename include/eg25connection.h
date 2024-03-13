@@ -520,6 +520,10 @@ class eg25Connection
     void urcLoop(std::stop_token st);
     std::string lookupModemCommand(sdbus::MethodCall& call);
     void logModemData(std::string s);
+    void registerDbusMethods();
+    void registerModemAvailableMethod();
+    void registerCommands();
+    void registerSignals();
 
     std::function<void(sdbus::MethodCall)> modemAvailableL;
     std::function<void(sdbus::MethodCall)> sendCommandL;
