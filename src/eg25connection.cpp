@@ -7,9 +7,9 @@
 #include <loglibrary.h>
 
 #define MAX_TIMEOUT 100.0
-#define DBUS_SERVICE_NAME  "sgy.pine.modem"
-#define DBUS_OBJECT_PATH   "/sgy/pine/modem"
-#define DBUS_INTERFACE_NAME "sgy.pine.modem"
+#define DBUS_SERVICE_NAME  "org.gspine.modem"
+#define DBUS_OBJECT_PATH   "/org/gspine/modem"
+#define DBUS_INTERFACE_NAME "org.gspine.modem"
 
 #define CUSTOM_COMMAND_MEMBER   "send_command"
 #define INVALID_COMMAND  "INVALID"

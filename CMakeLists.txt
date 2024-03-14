@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(modemservice LANGUAGES CXX)
+project(modemmanager LANGUAGES CXX)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD 20)
@@ -19,23 +19,23 @@ find_package(sdbus-c++ REQUIRED)
 find_package(SettingsLib)
 find_package(LogLibrary)
 
-qt_add_executable(modemservice src/main.cpp
+qt_add_executable(modemmanager src/main.cpp
                                src/eg25connection.cpp
                                include/eg25connection.h
                                include/commandlistmodel.h
                                src/commandlistmodel.cpp
-                               sgy.pine.modem.conf)
+                               org.gspine.modem.conf)
 
 
-target_include_directories(modemservice PUBLIC include)
+target_include_directories(modemmanager PUBLIC include)
 
 if (build_ui)
-    qt_add_qml_module(modemservice
+    qt_add_qml_module(modemmanager
                       URI ModemService
                       VERSION 1.0
                       QML_FILES qml/Main.qml)
 
-    target_link_libraries(modemservice PRIVATE Qt6::Quick)
+    target_link_libraries(modemmanager PRIVATE Qt6::Quick)
 endif()
 
 add_custom_command(
@@ -47,12 +47,12 @@ add_custom_command(
 )
 
 
-install(TARGETS modemservice
+install(TARGETS modemmanager
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-install(FILES sgy.pine.modem.conf
+install(FILES org.gspine.modem.conf
     DESTINATION /etc/dbus-1/system.d/
 )
 
-target_link_libraries(modemservice PRIVATE SettingsLib Qt6::SerialPort sdbus-c++)
+target_link_libraries(modemmanager PRIVATE SettingsLib Qt6::SerialPort sdbus-c++)

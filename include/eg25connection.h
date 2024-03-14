@@ -6,7 +6,6 @@
 #include <atomic>
 #include <sdbus-c++/sdbus-c++.h>
 #include <functional>
-#include <string_view>
 #include <condition_variable>
 
 #include <map>
