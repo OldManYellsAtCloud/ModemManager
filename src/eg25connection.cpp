@@ -26,7 +26,6 @@ eg25Connection::eg25Connection(const std::string& modemName, const bool& enableL
     enableLogging_{enableLogging}
 {
     setupDbusConnection();
-    sendSignal(isModemAvailable);
     waitForModem(modemName);
 
     assert((void("Could not find modem!"), serialPort->isOpen()));
@@ -99,7 +98,7 @@ void eg25Connection::registerCommands()
 void eg25Connection::registerSignals()
 {
     dbusObject->registerSignal(DBUS_INTERFACE_NAME, "urc", "s");
-    dbusObject->registerSignal(DBUS_INTERFACE_NAME, "present", "b");
+    dbusObject->registerSignal(DBUS_INTERFACE_NAME, "present", "");
 }
 
 void eg25Connection::sendSignal(const std::string& content)
@@ -109,10 +108,9 @@ void eg25Connection::sendSignal(const std::string& content)
     dbusObject->emitSignal(signal);
 }
 
-void eg25Connection::sendSignal(bool present)
+void eg25Connection::sendPresenceSignal()
 {
     auto signal = dbusObject->createSignal(DBUS_INTERFACE_NAME, "present");
-    signal << present;
     dbusObject->emitSignal(signal);
 }
 
@@ -188,9 +186,9 @@ void eg25Connection::waitForModem(const std::string& modemName)
             if (ap.portName().toStdString() == modemName) {
                 serialPort = new QSerialPort(ap);
                 serialPort->open(QIODeviceBase::ReadWrite);
+                sendPresenceSignal();
 
                 isModemAvailable = true;
-                sendSignal(isModemAvailable);
                 return;
             }
         }

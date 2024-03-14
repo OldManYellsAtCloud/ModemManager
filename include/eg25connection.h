@@ -511,7 +511,7 @@ class eg25Connection
 
     void setupDbusConnection();
     void sendSignal(const std::string& content);
-    void sendSignal(bool present);
+    void sendPresenceSignal();
     std::string writeData(std::string cmd);
     std::string getResponse(int timeout);
     void sendCommand(sdbus::MethodCall& call);
