@@ -7,7 +7,7 @@
 #include <loglibrary.h>
 #include <chrono>
 
-#define MAX_TIMEOUT 100.0
+#define MAX_TIMEOUT_S 100.0
 
 #define CUSTOM_COMMAND_MEMBER   "send_command"
 #define INVALID_COMMAND  "INVALID"
@@ -45,7 +45,7 @@ eg25Connection::~eg25Connection()
 void eg25Connection::waitForModem(const std::string& modemName)
 {
     double timeout = 0;
-    while (timeout < MAX_TIMEOUT){
+    while (timeout < MAX_TIMEOUT_S){
         auto availablePorts = QSerialPortInfo::availablePorts();
         for (const QSerialPortInfo &ap: availablePorts){
             if (ap.portName().toStdString() == modemName) {

@@ -26,6 +26,12 @@ qt_add_executable(modemmanager src/main.cpp
                                src/simcard.cpp
                                include/dbusmanager.h
                                src/dbusmanager.cpp
+                               include/hardware.h
+                               src/hardware.cpp
+                               include/packetdomain.h
+                               src/packetdomain.cpp
+                               include/general.h
+                               src/general.cpp
                                org.gspine.modem.conf)
 
 

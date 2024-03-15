@@ -10,10 +10,10 @@ SimCard::SimCard(eg25Connection* modem, DbusManager* dbusManager): m_modem{modem
     auto getImsiCallback = [this](sdbus::MethodCall call){this->getImsi(call);};
     auto getPinStateCallback = [this](sdbus::MethodCall call){this->getPinState(call);};
     auto getPinRemainderCounterCallback = [this](sdbus::MethodCall call){this->getPinRemainderCounter(call);};
-    dbusManager->registerMethod("org.gspine.modem.sim", "pin_enter", "s", "ss", enterPinCallback);
-    dbusManager->registerMethod("org.gspine.modem.sim", "get_imsi", "", "ss", getImsiCallback);
-    dbusManager->registerMethod("org.gspine.modem.sim", "get_pin_state", "", "ss", getPinStateCallback);
-    dbusManager->registerMethod("org.gspine.modem.sim", "get_pin_counter", "s", "ii", getPinRemainderCounterCallback);
+    m_dbusManager->registerMethod("org.gspine.modem.sim", "pin_enter", "s", "ss", enterPinCallback);
+    m_dbusManager->registerMethod("org.gspine.modem.sim", "get_imsi", "", "ss", getImsiCallback);
+    m_dbusManager->registerMethod("org.gspine.modem.sim", "get_pin_state", "", "ss", getPinStateCallback);
+    m_dbusManager->registerMethod("org.gspine.modem.sim", "get_pin_counter", "s", "ii", getPinRemainderCounterCallback);
 }
 
 void SimCard::enterPin(sdbus::MethodCall &call)
