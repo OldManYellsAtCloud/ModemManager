@@ -101,6 +101,15 @@ void eg25Connection::registerSignals()
     dbusObject->registerSignal(DBUS_INTERFACE_NAME, "present", "");
 }
 
+std::string eg25Connection::accessSerial(const std::string& payload)
+{
+    std::lock_guard<std::mutex> lock{serialMutex};
+    if (payload != "")
+        return writeData(payload);
+
+    return getResponse(200);
+}
+
 void eg25Connection::sendSignal(const std::string& content)
 {
     auto signal = dbusObject->createSignal(DBUS_INTERFACE_NAME, "urc");
@@ -127,7 +136,7 @@ std::string eg25Connection::getResponse(int timeout){
             return response;
         }
 
-        timeout -= 100;
+        timeout -= URC_SERIAL_READ_TIMEOUT_MS;
 
     }
 
@@ -169,8 +178,7 @@ void eg25Connection::sendCommand(sdbus::MethodCall &call)
         cmd = std::vformat(cmd, std::make_format_args(arg));
     }
     logModemData(cmd);
-
-    std::string response = writeData(cmd);
+    std::string response = accessSerial(cmd);
 
     auto reply = call.createReply();
     reply << response;
@@ -204,13 +212,9 @@ std::string eg25Connection::writeData(std::string cmd)
     if (!cmd.ends_with(NEWLINE))
         cmd += NEWLINE;
 
-    commandWaiting = true;
-    std::lock_guard<std::mutex> lock{serialMutex};
     serialPort->write(cmd.c_str());
     serialPort->waitForBytesWritten();
     response = getResponse(300000);
-    commandWaiting = false;
-    serialFree.notify_one();
 
     logModemData(response);
     return response;
@@ -220,15 +224,12 @@ std::string eg25Connection::writeData(std::string cmd)
 void eg25Connection::urcLoop(std::stop_token st)
 {
     char* buffer;
-
+    std::string urcData;
     while(!st.stop_requested()){
-        std::unique_lock<std::mutex> lock{serialMutex};
-        serialFree.wait(lock, [&]{return !commandWaiting;});
-        if (serialPort->waitForReadyRead(200)) {
-            buffer = serialPort->readAll().data();
-            logModemData(buffer);
-            serialPort->clear();
-            sendSignal(buffer);
+        urcData = accessSerial();
+        if (urcData != ""){
+            logModemData(urcData);
+            sendSignal(urcData);
         }
     }
 }

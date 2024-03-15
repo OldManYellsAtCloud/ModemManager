@@ -497,7 +497,6 @@ class eg25Connection
 #endif
     QSerialPort *serialPort;
     bool isModemAvailable = false;
-    std::atomic_bool commandWaiting = false;
     std::stop_token stopUrcToken;
     std::jthread urcThread;
 
@@ -523,6 +522,8 @@ class eg25Connection
     void registerModemAvailableMethod();
     void registerCommands();
     void registerSignals();
+
+    std::string accessSerial(const std::string& payload = "");
 
     std::function<void(sdbus::MethodCall)> modemAvailableL;
     std::function<void(sdbus::MethodCall)> sendCommandL;
