@@ -511,7 +511,7 @@ class eg25Connection
     void setupDbusConnection();
     void sendSignal(const std::string& content);
     void sendPresenceSignal();
-    std::string writeData(std::string cmd);
+    void writeData(std::string cmd);
     std::string getResponse(int timeout);
     void sendCommand(sdbus::MethodCall& call);
     void waitForModem(const std::string& modemName);
@@ -528,9 +528,15 @@ class eg25Connection
     std::function<void(sdbus::MethodCall)> modemAvailableL;
     std::function<void(sdbus::MethodCall)> sendCommandL;
 
+    std::string readOrWriteSerial(std::variant<std::string, size_t> cmdOrTimeout);
+
 public:
     explicit eg25Connection(const std::string& modemName, const bool& enableLogging = false);
     ~eg25Connection();
+
+    std::string sendCommand(std::string cmd, size_t timeoutMs = 300);
+    std::string sendCommandAndExpectResponse(std::string cmd, std::string expectedResponse, size_t timeoutMs = 300);
+
     void stop_urc_loop();
 
 #ifdef UI_ENABLED

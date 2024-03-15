@@ -5,18 +5,20 @@
 #include <QtSerialPort/QSerialPortInfo>
 #include <format>
 #include <loglibrary.h>
+#include <chrono>
 
 #define MAX_TIMEOUT 100.0
-#define DBUS_SERVICE_NAME  "org.gspine.modem"
-#define DBUS_OBJECT_PATH   "/org/gspine/modem"
-#define DBUS_INTERFACE_NAME "org.gspine.modem"
 
 #define CUSTOM_COMMAND_MEMBER   "send_command"
 #define INVALID_COMMAND  "INVALID"
 #define FORMAT_TEMPLATE_CHARACTER '{'
 #define NEWLINE "\r\n"
 
-#define URC_SERIAL_READ_TIMEOUT_MS 100
+#define SERIAL_READ_TIMEOUT_MS 100
+
+#define VARIANT_WRITE_IDX 0
+#define VARIANT_READ_IDX 1
+
 
 bool isTemplate(const std::string& s){
     return s.find(FORMAT_TEMPLATE_CHARACTER) != std::string::npos;
@@ -25,13 +27,12 @@ bool isTemplate(const std::string& s){
 eg25Connection::eg25Connection(const std::string& modemName, const bool& enableLogging):
     enableLogging_{enableLogging}
 {
-    setupDbusConnection();
     waitForModem(modemName);
 
     assert((void("Could not find modem!"), serialPort->isOpen()));
 
-    auto l1 = [this]{this->urcLoop(stopUrcToken);};
-    urcThread = std::jthread(l1);
+//    auto l1 = [this]{this->urcLoop(stopUrcToken);};
+//    urcThread = std::jthread(l1);
 }
 
 eg25Connection::~eg25Connection()
@@ -41,104 +42,65 @@ eg25Connection::~eg25Connection()
         serialPort->close();
 }
 
+void eg25Connection::waitForModem(const std::string& modemName)
+{
+    double timeout = 0;
+    while (timeout < MAX_TIMEOUT){
+        auto availablePorts = QSerialPortInfo::availablePorts();
+        for (const QSerialPortInfo &ap: availablePorts){
+            if (ap.portName().toStdString() == modemName) {
+                serialPort = new QSerialPort(ap);
+                serialPort->open(QIODeviceBase::ReadWrite);
+                //sendPresenceSignal();
+
+                isModemAvailable = true;
+                return;
+            }
+        }
+        timeout += 0.5;
+        usleep(500000);
+    }
+}
+
+
+void eg25Connection::urcLoop(std::stop_token st)
+{
+    char* buffer;
+    std::string urcData;
+    while(!st.stop_requested()){
+        urcData = accessSerial();
+        if (urcData != ""){
+            logModemData(urcData);
+            //sendSignal(urcData);
+        }
+    }
+}
+
 void eg25Connection::stop_urc_loop()
 {
     urcThread.request_stop();
 }
 
-#ifdef UI_ENABLED
-void eg25Connection::sendDebugCommand(std::string cmd)
-{
-    logModemData(cmd);
-    writeData(cmd);
-}
-#endif
-
-void eg25Connection::setupDbusConnection(){
-    dbusConnection = sdbus::createSystemBusConnection(DBUS_SERVICE_NAME);
-    dbusObject = sdbus::createObject(*dbusConnection, DBUS_OBJECT_PATH);
-
-    registerSignals();
-    registerDbusMethods();
-
-    dbusObject->finishRegistration();
-    dbusConnection->enterEventLoopAsync();
-}
-
-void eg25Connection::registerDbusMethods()
-{
-    registerModemAvailableMethod();
-    registerCommands();
-}
-
-void eg25Connection::registerModemAvailableMethod()
-{
-    modemAvailableL = [this](sdbus::MethodCall call){
-        auto reply = call.createReply();
-        reply << this->isModemAvailable;
-        reply.send();
-    };
-    dbusObject->registerMethod(DBUS_INTERFACE_NAME, "modem_available", "", "b", modemAvailableL);
-}
-
-void eg25Connection::registerCommands()
-{
-    sendCommandL = [this](sdbus::MethodCall call){this->sendCommand(call);};
-    for (auto it = dbus2modem_commands.begin(); it != dbus2modem_commands.end(); ++it){
-        std::string inputPattern;
-        if (it->second.find("{") != std::string::npos){
-            inputPattern = "s";
-        } else {
-            inputPattern = "";
-        }
-        dbusObject->registerMethod(DBUS_INTERFACE_NAME, it->first, inputPattern, "s", sendCommandL);
-    }
-}
-
-void eg25Connection::registerSignals()
-{
-    dbusObject->registerSignal(DBUS_INTERFACE_NAME, "urc", "s");
-    dbusObject->registerSignal(DBUS_INTERFACE_NAME, "present", "");
-}
-
-std::string eg25Connection::accessSerial(const std::string& payload)
-{
-    std::lock_guard<std::mutex> lock{serialMutex};
-    if (payload != "")
-        return writeData(payload);
-
-    return getResponse(200);
-}
-
-void eg25Connection::sendSignal(const std::string& content)
-{
-    auto signal = dbusObject->createSignal(DBUS_INTERFACE_NAME, "urc");
-    signal << content;
-    dbusObject->emitSignal(signal);
-}
-
-void eg25Connection::sendPresenceSignal()
-{
-    auto signal = dbusObject->createSignal(DBUS_INTERFACE_NAME, "present");
-    dbusObject->emitSignal(signal);
-}
-
-
 std::string eg25Connection::getResponse(int timeout){
     bool ready;
     std::string response;
 
-    while (timeout > 0){
-        ready = serialPort->waitForReadyRead(URC_SERIAL_READ_TIMEOUT_MS);
+    auto timeNow = []()->long{
+        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    };
+
+    auto startTimeMs = timeNow();
+
+    do {
+        ready = serialPort->waitForReadyRead(SERIAL_READ_TIMEOUT_MS);
         if (ready) {
             response = serialPort->readAll().toStdString();
             serialPort->clear();
             return response;
         }
+    } while (timeNow() - startTimeMs < timeout);
 
-        timeout -= URC_SERIAL_READ_TIMEOUT_MS;
-
-    }
+    ERROR("Have not received a response before {}ms timeout!", timeout);
 
     return "";
 }
@@ -185,51 +147,80 @@ void eg25Connection::sendCommand(sdbus::MethodCall &call)
     reply.send();
 }
 
-void eg25Connection::waitForModem(const std::string& modemName)
+
+void eg25Connection::writeData(std::string cmd)
 {
-    double timeout = 0;
-    while (timeout < MAX_TIMEOUT){
-        auto availablePorts = QSerialPortInfo::availablePorts();
-        for (const QSerialPortInfo &ap: availablePorts){
-            if (ap.portName().toStdString() == modemName) {
-                serialPort = new QSerialPort(ap);
-                serialPort->open(QIODeviceBase::ReadWrite);
-                sendPresenceSignal();
-
-                isModemAvailable = true;
-                return;
-            }
-        }
-        timeout += 0.5;
-        usleep(500000);
-    }
-}
-
-
-std::string eg25Connection::writeData(std::string cmd)
-{
-    std::string response;
     if (!cmd.ends_with(NEWLINE))
         cmd += NEWLINE;
 
-    serialPort->write(cmd.c_str());
-    serialPort->waitForBytesWritten();
-    response = getResponse(300000);
+    auto writeRes = serialPort->write(cmd.c_str());
+    if (writeRes != cmd.length()){
+        ERROR("Could not send all bytes to modem! Sent bytes: {}, actual length: {}",
+              writeRes, cmd.length());
+    }
 
-    logModemData(response);
+    if (!serialPort->waitForBytesWritten()){
+        ERROR("Could not write the payload to the modem!");
+    }
+}
+
+std::string eg25Connection::accessSerial(const std::string& payload)
+{
+    if (payload != ""){
+        writeData(payload);
+        return "";
+    }
+
+    return getResponse(200);
+}
+
+std::string eg25Connection::sendCommand(std::string cmd, size_t timeoutMs)
+{
+    readOrWriteSerial(cmd);
+    std::string response = readOrWriteSerial(timeoutMs);
     return response;
 }
 
-
-void eg25Connection::urcLoop(std::stop_token st)
+std::string eg25Connection::sendCommandAndExpectResponse(std::string cmd, std::string expectedResponse, size_t timeoutMs)
 {
-    char* buffer;
-    std::string urcData;
-    while(!st.stop_requested()){
-        urcData = accessSerial();
-        if (urcData != ""){
-            logModemData(urcData);
-            sendSignal(urcData);
+    auto timeNow = []()->long{
+        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    };
+
+    auto startTimeMs = timeNow();
+    std::string response = sendCommand(cmd, timeoutMs);
+
+    if (response.find(expectedResponse) != std::string::npos)
+        return response;
+
+    while (timeNow() - startTimeMs < timeoutMs){
+        response += readOrWriteSerial(timeoutMs);
+        if (response.find(expectedResponse) != std::string::npos){
+            return response;
         }
     }
+
+    ERROR("Something is not right, could not find the expected response '{}' in the message '{}'. "
+          "Please fix your program.", expectedResponse, response);
+    exit(1);
 }
+
+std::string eg25Connection::readOrWriteSerial(std::variant<std::string, size_t> cmdOrTimeout)
+{
+    std::lock_guard<std::mutex> lock{serialMutex};
+    switch (cmdOrTimeout.index()){
+    case VARIANT_WRITE_IDX:
+        writeData(std::get<std::string>(cmdOrTimeout));
+        return "";
+    default:
+        return getResponse(std::get<size_t>(cmdOrTimeout));
+    }
+}
+
+#ifdef UI_ENABLED
+void eg25Connection::sendDebugCommand(std::string cmd)
+{
+    logModemData(cmd);
+    writeData(cmd);
+}
+#endif

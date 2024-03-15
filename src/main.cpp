@@ -8,6 +8,8 @@
 #include <loglibrary.h>
 
 #include "eg25connection.h"
+#include "dbusmanager.h"
+#include "simcard.h"
 
 #define CONFIG_FOLDER  "/etc"
 
@@ -58,8 +60,13 @@ int main(int argc, char* argv[])
 
     signal(SIGTERM, finishHandler);
     signal(SIGINT, finishHandler);
+    eg25Connection modem{modemPath, logRequests};
+    DbusManager dbusManager{};
 
-    ec = std::make_unique<eg25Connection>(modemPath, logRequests);
+    SimCard simcard{&modem, &dbusManager};
+    dbusManager.finishRegistrationAndEnterLoop();
+
+    //ec = std::make_unique<eg25Connection>(modemPath, logRequests);
 
 #ifdef UI_ENABLED
     if (debugMode)

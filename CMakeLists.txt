@@ -22,10 +22,15 @@ find_package(LogLibrary)
 qt_add_executable(modemmanager src/main.cpp
                                src/eg25connection.cpp
                                include/eg25connection.h
-                               include/commandlistmodel.h
-                               src/commandlistmodel.cpp
+                               include/simcard.h
+                               src/simcard.cpp
+                               include/dbusmanager.h
+                               src/dbusmanager.cpp
                                org.gspine.modem.conf)
 
+
+# include/commandlistmodel.h
+# src/commandlistmodel.cpp
 
 target_include_directories(modemmanager PUBLIC include)
 
