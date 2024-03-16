@@ -19,13 +19,32 @@ find_package(sdbus-c++ REQUIRED)
 find_package(SettingsLib)
 find_package(LogLibrary)
 
+set(SOURCES src/eg25connection.cpp
+            src/simcard.cpp
+            src/dbusmanager.cpp
+            src/hardware.cpp
+            src/packetdomain.cpp
+            src/general.cpp
+            src/responseextractors.cpp
+            src/urc.cpp)
+
+set(HEADERS include/eg25connection.h
+            include/simcard.h
+            include/dbusmanager.h
+            include/hardware.h
+            include/packetdomain.h
+            include/general.h
+            include/responseextractors.h
+            include/urc.h)
+
 qt_add_executable(modemmanager src/main.cpp
-                               src/eg25connection.cpp
-                               include/eg25connection.h
-                               include/commandlistmodel.h
-                               src/commandlistmodel.cpp
+                               ${SOURCES}
+                               ${HEADERS}
                                org.gspine.modem.conf)
 
+
+# include/commandlistmodel.h
+# src/commandlistmodel.cpp
 
 target_include_directories(modemmanager PUBLIC include)
 

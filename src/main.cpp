@@ -8,14 +8,19 @@
 #include <loglibrary.h>
 
 #include "eg25connection.h"
+#include "dbusmanager.h"
+
+#include "simcard.h"
+#include "hardware.h"
+#include "packetdomain.h"
+#include "general.h"
+#include "urc.h"
 
 #define CONFIG_FOLDER  "/etc"
 
-std::unique_ptr<eg25Connection> ec;
-
 void finishHandler(int signum){
     std::cout << "Signal received: " << signum << std::endl;
-    ec->stop_urc_loop();
+    //ec->stop_urc_loop();
     exit(0);
 }
 
@@ -56,10 +61,16 @@ int main(int argc, char* argv[])
             LOG("Unknown argument: {}", argv[i]);
     }
 
-    signal(SIGTERM, finishHandler);
-    signal(SIGINT, finishHandler);
+    eg25Connection modem{modemPath, logRequests};
+    DbusManager dbusManager{};
 
-    ec = std::make_unique<eg25Connection>(modemPath, logRequests);
+    SimCard simcard{&modem, &dbusManager};
+    Hardware hw{&modem, &dbusManager};
+    PacketDomain pd{&modem, &dbusManager};
+    General general{&modem, &dbusManager};
+    Urc urc{&modem, &dbusManager};
+
+    dbusManager.finishRegistrationAndEnterLoop();
 
 #ifdef UI_ENABLED
     if (debugMode)
