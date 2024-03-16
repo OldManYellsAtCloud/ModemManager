@@ -1,4 +1,5 @@
 #include "general.h"
+#include "responseextractors.h"
 
 General::General(eg25Connection* modem, DbusManager* dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
 {
@@ -12,25 +13,13 @@ void General::setFunctionalityLevel(sdbus::MethodCall &call)
 {
     std::string func;
     call >> func;
-    assert(func == "Full" || func == "Min" || func == "Disable");
+    assert(FUNCTIONALITY_TO_VAL.contains(func));
 
-    std::string cmd = CFUN_COMMAND + "=";
-    if (func == "Min") {
-        cmd += "0";
-    } else if (func == "Full") {
-        cmd += "1";
-    } else {
-        cmd += "4";
-    }
-
+    std::string cmd = CFUN_COMMAND + "=" + FUNCTIONALITY_TO_VAL.at(func);
     std::string response = m_modem->sendCommand(cmd, 15 * 1000);
+
     auto dbusResponse = call.createReply();
-
-    if (response.find("OK") != std::string::npos)
-        dbusResponse << true;
-    else
-        dbusResponse << false;
-
+    dbusResponse << isResponseSuccess(response);
     dbusResponse.send();
 }
 
@@ -41,17 +30,9 @@ void General::getFunctionalityLevel(sdbus::MethodCall &call)
 
     size_t start = response.find(": ") + 2;
     std::string state = response.substr(start, 1);
-    assert(state == "0" || state == "1" || state == "4");
+    assert(VAL_TO_FUNCTIONALITY.contains(state));
 
     auto dbusResponse = call.createReply();
-
-    if (state == "0") {
-        dbusResponse << "Min";
-    } else if (state == "1") {
-        dbusResponse << "Full";
-    } else {
-        dbusResponse << "Disabled";
-    }
-
+    dbusResponse << VAL_TO_FUNCTIONALITY.at(state);
     dbusResponse.send();
 }

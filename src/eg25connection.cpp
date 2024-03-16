@@ -3,7 +3,6 @@
 #include <unistd.h>
 
 #include <QtSerialPort/QSerialPortInfo>
-#include <format>
 #include <loglibrary.h>
 #include <chrono>
 
@@ -20,24 +19,15 @@
 #define VARIANT_READ_IDX 1
 
 
-bool isTemplate(const std::string& s){
-    return s.find(FORMAT_TEMPLATE_CHARACTER) != std::string::npos;
-}
-
 eg25Connection::eg25Connection(const std::string& modemName, const bool& enableLogging):
     enableLogging_{enableLogging}
 {
     waitForModem(modemName);
-
     assert((void("Could not find modem!"), serialPort->isOpen()));
-
-//    auto l1 = [this]{this->urcLoop(stopUrcToken);};
-//    urcThread = std::jthread(l1);
 }
 
 eg25Connection::~eg25Connection()
 {
-    stop_urc_loop();
     if (serialPort->isOpen())
         serialPort->close();
 }
@@ -51,8 +41,6 @@ void eg25Connection::waitForModem(const std::string& modemName)
             if (ap.portName().toStdString() == modemName) {
                 serialPort = new QSerialPort(ap);
                 serialPort->open(QIODeviceBase::ReadWrite);
-                //sendPresenceSignal();
-
                 isModemAvailable = true;
                 return;
             }
@@ -60,25 +48,6 @@ void eg25Connection::waitForModem(const std::string& modemName)
         timeout += 0.5;
         usleep(500000);
     }
-}
-
-
-void eg25Connection::urcLoop(std::stop_token st)
-{
-    char* buffer;
-    std::string urcData;
-    while(!st.stop_requested()){
-        urcData = accessSerial();
-        if (urcData != ""){
-            logModemData(urcData);
-            //sendSignal(urcData);
-        }
-    }
-}
-
-void eg25Connection::stop_urc_loop()
-{
-    urcThread.request_stop();
 }
 
 std::string eg25Connection::getResponse(int timeout){
@@ -105,20 +74,6 @@ std::string eg25Connection::getResponse(int timeout){
     return "";
 }
 
-std::string eg25Connection::lookupModemCommand(sdbus::MethodCall &call){
-    std::string cmd;
-    std::string dbusCommand = call.getMemberName();
-    auto cmdlookup = dbus2modem_commands.find(dbusCommand);
-    if (cmdlookup != dbus2modem_commands.end()){
-        cmd = cmdlookup->second;
-    } else if (dbusCommand == CUSTOM_COMMAND_MEMBER){
-        call >> cmd;
-    } else {
-        cmd = INVALID_COMMAND;
-    }
-    return cmd;
-}
-
 void eg25Connection::logModemData(std::string s)
 {
 #ifdef UI_ENABLED
@@ -129,24 +84,6 @@ void eg25Connection::logModemData(std::string s)
 
     LOG("Modem data: {}", s);
 }
-
-void eg25Connection::sendCommand(sdbus::MethodCall &call)
-{
-    std::string cmd = lookupModemCommand(call);
-
-    if (isTemplate(cmd)){
-        std::string arg;
-        call >> arg;
-        cmd = std::vformat(cmd, std::make_format_args(arg));
-    }
-    logModemData(cmd);
-    std::string response = accessSerial(cmd);
-
-    auto reply = call.createReply();
-    reply << response;
-    reply.send();
-}
-
 
 void eg25Connection::writeData(std::string cmd)
 {
@@ -215,6 +152,11 @@ std::string eg25Connection::readOrWriteSerial(std::variant<std::string, size_t> 
     default:
         return getResponse(std::get<size_t>(cmdOrTimeout));
     }
+}
+
+std::string eg25Connection::readSerial(size_t timeout)
+{
+    return readOrWriteSerial(timeout);
 }
 
 #ifdef UI_ENABLED

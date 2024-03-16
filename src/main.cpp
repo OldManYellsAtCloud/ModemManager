@@ -14,6 +14,7 @@
 #include "hardware.h"
 #include "packetdomain.h"
 #include "general.h"
+#include "urc.h"
 
 #define CONFIG_FOLDER  "/etc"
 
@@ -60,8 +61,6 @@ int main(int argc, char* argv[])
             LOG("Unknown argument: {}", argv[i]);
     }
 
-    signal(SIGTERM, finishHandler);
-    signal(SIGINT, finishHandler);
     eg25Connection modem{modemPath, logRequests};
     DbusManager dbusManager{};
 
@@ -69,7 +68,7 @@ int main(int argc, char* argv[])
     Hardware hw{&modem, &dbusManager};
     PacketDomain pd{&modem, &dbusManager};
     General general{&modem, &dbusManager};
-
+    Urc urc{&modem, &dbusManager};
 
     dbusManager.finishRegistrationAndEnterLoop();
 

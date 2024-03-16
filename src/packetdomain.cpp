@@ -1,5 +1,5 @@
 #include "packetdomain.h"
-
+#include "responseextractors.h"
 #include <loglibrary.h>
 PacketDomain::PacketDomain(eg25Connection* modem, DbusManager* dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
 {
@@ -22,11 +22,7 @@ void PacketDomain::enablePacketDomain(sdbus::MethodCall &call)
     std::string response = m_modem->sendCommand(cmd, 140 * 1000);
     auto dbusResponse = call.createReply();
 
-    if (response.find("OK") != std::string::npos)
-        dbusResponse << true;
-    else
-        dbusResponse << false;
-
+    dbusResponse << isResponseSuccess(response);
     dbusResponse.send();
 }
 
@@ -36,17 +32,11 @@ void PacketDomain::getPacketDomainState(sdbus::MethodCall &call)
     std::string cmd = GATT_COMMAND + "?";
     std::string response = m_modem->sendCommand(cmd, 140 * 1000);
 
-    size_t start = response.find(": ") + 2;
-    std::string state = response.substr(start, 1);
-    assert(state == "0" || state == "1");
+    int res = extractNumericEnum(response);
+    assert(res != NUMBER_NOT_FOUND);
 
     auto dbusResponse = call.createReply();
-
-    if (state == "0")
-        dbusResponse << false;
-    else
-        dbusResponse << true;
-
+    dbusResponse << (res > 0);
     dbusResponse.send();
 }
 

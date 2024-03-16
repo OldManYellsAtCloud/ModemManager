@@ -1,4 +1,6 @@
 #include "simcard.h"
+#include "responseextractors.h"
+
 #include <loglibrary.h>
 
 #define IMSI_LENGTH  15
@@ -41,9 +43,7 @@ void SimCard::getImsi(sdbus::MethodCall &call)
 {
     LOG("Requesting IMSI");
     std::string response = m_modem->sendCommand(CIMI_COMMAND);
-    size_t imsiStart = response.find_first_of(NUMBERS);
-    size_t imsiEnd = response.find_last_of(NUMBERS);
-    std::string imsi = response.substr(imsiStart, imsiEnd - imsiStart + 1);
+    std::string imsi = extractNumericEnumAsString(response);
 
     auto dbusResponse = call.createReply();
 
@@ -67,7 +67,7 @@ void SimCard::getPinState(sdbus::MethodCall &call)
     std::string response = m_modem->sendCommand(cmd);
 
     size_t stateStart = response.find("CPIN") + 6;
-    size_t stateEnd = response.find_first_of(" \t\n\r", stateStart);
+    size_t stateEnd = response.find_first_of("\n\r", stateStart);
     std::string pinState = response.substr(stateStart, stateEnd - stateStart);
 
     auto dbusResponse = call.createReply();

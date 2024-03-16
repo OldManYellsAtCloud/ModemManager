@@ -1,4 +1,6 @@
 #include "hardware.h"
+#include "responseextractors.h"
+
 #include <loglibrary.h>
 
 Hardware::Hardware(eg25Connection* modem, DbusManager* dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
@@ -18,10 +20,9 @@ void Hardware::setLowPower(sdbus::MethodCall &call)
     cmd += enable ? "1" : "0";
 
     std::string response = m_modem->sendCommand(cmd);
-    bool res = response.find("OK") != std::string::npos;
 
     auto dbusResponse = call.createReply();
-    if (response.find("OK") != std::string::npos) {
+    if (isResponseSuccess(response)) {
         dbusResponse << "OK";
     } else {
         dbusResponse << response;
@@ -35,16 +36,11 @@ void Hardware::getLowPower(sdbus::MethodCall &call)
     std::string cmd = SCLK_COMMAND + "?";
     std::string response = m_modem->sendCommand(cmd);
 
-    size_t start = response.find(": ") + 2;
-    std::string state = response.substr(start, 1);
-    assert(state == "0" || state == "1");
+    int res = extractNumericEnum(response);
+    assert(res != NUMBER_NOT_FOUND);
 
     auto dbusResponse = call.createReply();
 
-    if (state == "0")
-        dbusResponse << false;
-    else
-        dbusResponse << true;
-
+    dbusResponse << (res > 0);
     dbusResponse.send();
 }
