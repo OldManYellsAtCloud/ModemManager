@@ -8,6 +8,7 @@
 int extractNumericEnum(std::string s);
 bool isResponseSuccess(std::string s);
 std::string extractNumericEnumAsString(std::string s);
-
+std::string flattenString(std::string s);
+std::string replaceSubstring(std::string s, std::string sub1, std::string sub2);
 
 #endif // RESPONSEEXTRACTORS_H

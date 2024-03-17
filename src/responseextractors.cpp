@@ -29,3 +29,19 @@ bool isResponseSuccess(std::string s)
 {
     return s.find("OK") != std::string::npos;
 }
+
+std::string flattenString(std::string s)
+{
+    s = replaceSubstring(s, "\n", "");
+    s = replaceSubstring(s, "\r", " ");
+    return s;
+}
+
+std::string replaceSubstring(std::string s, std::string sub1, std::string sub2)
+{
+    size_t idx;
+    while ((idx = s.find(sub1)) != std::string::npos){
+        s.replace(idx, sub1.size(), sub2);
+    }
+    return s;
+}

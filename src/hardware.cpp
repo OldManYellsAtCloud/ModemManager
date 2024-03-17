@@ -3,7 +3,7 @@
 
 #include <loglibrary.h>
 
-Hardware::Hardware(eg25Connection* modem, DbusManager* dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
+Hardware::Hardware(ModemConnection* modem, DbusManager* dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
 {
     auto setLowPowerCallback = [this](sdbus::MethodCall call){this->setLowPower(call);};
     auto getLowPowerCallback = [this](sdbus::MethodCall call){this->getLowPower(call);};

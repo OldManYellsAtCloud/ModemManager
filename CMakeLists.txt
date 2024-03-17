@@ -35,7 +35,9 @@ set(HEADERS include/eg25connection.h
             include/packetdomain.h
             include/general.h
             include/responseextractors.h
-            include/urc.h)
+            include/modemconnection.h
+            include/urc.h
+        )
 
 qt_add_executable(modemmanager src/main.cpp
                                ${SOURCES}

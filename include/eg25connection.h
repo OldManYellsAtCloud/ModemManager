@@ -1,11 +1,12 @@
 #ifndef EG25CONNECTION_H
 #define EG25CONNECTION_H
 
+#include "modemconnection.h"
 #include <QtSerialPort/QSerialPort>
 #include <condition_variable>
 
 
-class eg25Connection
+class eg25Connection: public ModemConnection
 #ifdef UI_ENABLED
 : public QObject
 #endif
@@ -39,9 +40,9 @@ public:
     explicit eg25Connection(const std::string& modemName, const bool& enableLogging = false);
     ~eg25Connection();
 
-    std::string sendCommand(std::string cmd, size_t timeoutMs = 300);
-    std::string readSerial(size_t timeout);
-    std::string sendCommandAndExpectResponse(std::string cmd, std::string expectedResponse, size_t timeoutMs = 300);
+    std::string sendCommand(std::string cmd, size_t timeoutMs = 300) override;
+    std::string readSerial(size_t timeout) override;
+    std::string sendCommandAndExpectResponse(std::string cmd, std::string expectedResponse, size_t timeoutMs = 300) override;
 
 #ifdef UI_ENABLED
     void sendDebugCommand(std::string cmd);

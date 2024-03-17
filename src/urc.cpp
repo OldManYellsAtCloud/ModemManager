@@ -2,7 +2,7 @@
 #include <chrono>
 
 
-Urc::Urc(eg25Connection *modem, DbusManager *dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
+Urc::Urc(ModemConnection *modem, DbusManager *dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
 {
     urcThread = std::jthread(&Urc::listToUrc, this);
     m_dbusManager->registerSignal("org.gspine.modem", "urc", "s");

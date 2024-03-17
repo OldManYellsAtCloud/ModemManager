@@ -6,7 +6,7 @@
 #define IMSI_LENGTH  15
 #define NUMBERS "0123456789"
 
-SimCard::SimCard(eg25Connection* modem, DbusManager* dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
+SimCard::SimCard(ModemConnection* modem, DbusManager* dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
 {
     auto enterPinCallback = [this](sdbus::MethodCall call){this->enterPin(call);};
     auto getImsiCallback = [this](sdbus::MethodCall call){this->getImsi(call);};

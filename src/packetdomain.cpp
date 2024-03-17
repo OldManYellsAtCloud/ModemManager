@@ -1,7 +1,7 @@
 #include "packetdomain.h"
 #include "responseextractors.h"
 #include <loglibrary.h>
-PacketDomain::PacketDomain(eg25Connection* modem, DbusManager* dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
+PacketDomain::PacketDomain(ModemConnection* modem, DbusManager* dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
 {
     auto enablePackedDomainCallback = [this](sdbus::MethodCall call){this->enablePacketDomain(call);};
     auto getPacketDomainStateCallback = [this](sdbus::MethodCall call){this->getPacketDomainState(call);};
