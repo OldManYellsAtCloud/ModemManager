@@ -8,6 +8,11 @@ DbusManager::DbusManager() {
     dbusObject = sdbus::createObject(*dbusConnection, MAIN_DBUS_OBJECT_PATH);
 }
 
+DbusManager::~DbusManager()
+{
+    dbusConnection->leaveEventLoop();
+}
+
 void DbusManager::registerSignal(std::string interface, std::string name, std::string signature)
 {
     LOG("Registering dbus signal. Iface: {}, name: {}, signature: {}",

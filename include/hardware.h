@@ -4,6 +4,8 @@
 #include "modemconnection.h"
 #include "dbusmanager.h"
 
+#define HW_DBUS_INTERFACE  "org.gspine.modem.hw"
+
 const std::string SCLK_COMMAND = "AT+QSCLK";
 
 class Hardware

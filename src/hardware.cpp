@@ -7,8 +7,8 @@ Hardware::Hardware(ModemConnection* modem, DbusManager* dbusManager): m_modem{mo
 {
     auto setLowPowerCallback = [this](sdbus::MethodCall call){this->setLowPower(call);};
     auto getLowPowerCallback = [this](sdbus::MethodCall call){this->getLowPower(call);};
-    m_dbusManager->registerMethod("org.gspine.modem.hw", "set_low_power", "b", "s", setLowPowerCallback);
-    m_dbusManager->registerMethod("org.gspine.modem.hw", "get_low_power", "", "b", getLowPowerCallback);
+    m_dbusManager->registerMethod(HW_DBUS_INTERFACE, "set_low_power", "b", "ss", setLowPowerCallback);
+    m_dbusManager->registerMethod(HW_DBUS_INTERFACE, "get_low_power", "", "sb", getLowPowerCallback);
 }
 
 void Hardware::setLowPower(sdbus::MethodCall &call)
@@ -25,8 +25,9 @@ void Hardware::setLowPower(sdbus::MethodCall &call)
     if (isResponseSuccess(response)) {
         dbusResponse << "OK";
     } else {
-        dbusResponse << response;
+        dbusResponse << getErrorMessage(response);
     }
+    dbusResponse << response;
     dbusResponse.send();
 }
 
@@ -36,11 +37,16 @@ void Hardware::getLowPower(sdbus::MethodCall &call)
     std::string cmd = SCLK_COMMAND + "?";
     std::string response = m_modem->sendCommand(cmd);
 
-    int res = extractNumericEnum(response);
-    assert(res != NUMBER_NOT_FOUND);
-
     auto dbusResponse = call.createReply();
 
-    dbusResponse << (res > 0);
+    if (isResponseSuccess(response)){
+        int res = extractNumericEnum(response);
+        dbusResponse << "OK";
+        dbusResponse << (res > 0);
+    } else {
+        dbusResponse << "ERROR: " + getErrorMessage(response);
+        dbusResponse << false;
+    }
+
     dbusResponse.send();
 }

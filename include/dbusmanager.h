@@ -14,6 +14,7 @@ class DbusManager
     bool eventLoopStarted = false;
 public:
     DbusManager();
+    ~DbusManager();
     void registerSignal(std::string interface, std::string name, std::string signature);
     void registerMethod(std::string interface, std::string name, std::string inputSignature,
                         std::string outputSignature, sdbus::method_callback callback);

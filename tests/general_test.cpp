@@ -145,3 +145,17 @@ TEST(General_Suite, GetProductIdInfo){
     EXPECT_EQ("coolio warmio", object);
     EXPECT_EQ("6587rd", revision);
 }
+
+TEST(General_Suite, GetProductIdInfoBorkedModem){
+    SETUP
+    auto method = dbusProxy->createMethodCall(GENERAL_DBUS_INTERFACE, "get_product_id_info");
+    EXPECT_CALL(modem, sendCommand("ATI", 300)).Times(1).WillOnce(Return("\r\ncoolio warmio\r\nRevision: 6587rd\r\n\r\nBRUGGGA\r\n"));
+    auto response = dbusProxy->callMethod(method);
+    std::string res, object, revision;
+    response >> res;
+    response >> object;
+    response >> revision;
+    EXPECT_EQ("ERROR", res);
+    EXPECT_EQ("Unknown error: \r\ncoolio warmio\r\nRevision: 6587rd\r\n\r\nBRUGGGA\r\n", object);
+    EXPECT_EQ("\r\ncoolio warmio\r\nRevision: 6587rd\r\n\r\nBRUGGGA\r\n", revision);
+}
