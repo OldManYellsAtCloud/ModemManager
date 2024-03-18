@@ -15,7 +15,6 @@ endif()
 
 find_package(Qt6 REQUIRED COMPONENTS SerialPort)
 find_package(sdbus-c++ REQUIRED)
-# find_package(sdbus-c++-tools REQUIRED)
 find_package(SettingsLib)
 find_package(LogLibrary)
 
@@ -77,3 +76,32 @@ install(FILES org.gspine.modem.conf
 )
 
 target_link_libraries(modemmanager PRIVATE SettingsLib Qt6::SerialPort sdbus-c++)
+
+option(enable_test "Compile and run tests" OFF)
+
+if (enable_test)
+    find_package(GTest REQUIRED)
+    enable_testing()
+
+    set(TEST_SOURCES tests/misc_test.cpp
+                     tests/general_test.cpp
+                     tests/mockmodem.h)
+
+    add_executable(mm_tests ${HEADERS} ${SOURCES} ${TEST_SOURCES}
+         )
+
+    include(GoogleTest)
+
+
+
+    target_include_directories(mm_tests PRIVATE include)
+    target_link_directories(mm_tests PRIVATE $ENV{CMAKE_SYSROOT}/usr/lib)
+    target_link_libraries(mm_tests PRIVATE GTest::gtest_main GTest::gmock_main SettingsLib sdbus-c++ Qt6::SerialPort)
+
+    install(TARGETS mm_tests
+            BUNDLE DESTINATION .
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DTEST_ENABLED")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTEST_ENABLED")
+endif()

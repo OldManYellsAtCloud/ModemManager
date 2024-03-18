@@ -6,6 +6,8 @@
 #include "modemconnection.h"
 #include "dbusmanager.h"
 
+#define GENERAL_DBUS_INTERFACE  "org.gspine.modem.general"
+
 
 const std::string CFUN_COMMAND = "AT+CFUN";
 const std::string ATI_COMMAND = "ATI";
@@ -27,7 +29,6 @@ const std::map<std::string, std::string> VAL_TO_FUNCTIONALITY = {
 class General
 {
 private:
-    //eg25Connection* m_modem;
     ModemConnection* m_modem;
     DbusManager* m_dbusManager;
 public:

@@ -15,7 +15,7 @@ SimCard::SimCard(ModemConnection* modem, DbusManager* dbusManager): m_modem{mode
     m_dbusManager->registerMethod("org.gspine.modem.sim", "pin_enter", "s", "ss", enterPinCallback);
     m_dbusManager->registerMethod("org.gspine.modem.sim", "get_imsi", "", "ss", getImsiCallback);
     m_dbusManager->registerMethod("org.gspine.modem.sim", "get_pin_state", "", "ss", getPinStateCallback);
-    m_dbusManager->registerMethod("org.gspine.modem.sim", "get_pin_counter", "s", "ii", getPinRemainderCounterCallback);
+    m_dbusManager->registerMethod("org.gspine.modem.sim", "get_pin_counter", "s", "sii", getPinRemainderCounterCallback);
 }
 
 void SimCard::enterPin(sdbus::MethodCall &call)
@@ -30,11 +30,16 @@ void SimCard::enterPin(sdbus::MethodCall &call)
     std::string response;
     size_t timeoutMs = 5000;
     response = m_modem->sendCommandAndExpectResponse(cmd, EXPECTED_RESPONSE, timeoutMs);
-    LOG("PIN accepted successfully");
-
     auto dbusResponse = call.createReply();
-    // if it's unsuccessful, it will die beforehand... at least at this time.
-    dbusResponse << "OK";
+
+    if (isResponseSuccess(response)) {
+        LOG("PIN accepted successfully");
+        dbusResponse << "OK";
+    } else {
+        LOG("PIN not accepted.");
+        dbusResponse << getErrorMessage(response);
+    }
+
     dbusResponse << response;
     dbusResponse.send();
 }
@@ -43,18 +48,14 @@ void SimCard::getImsi(sdbus::MethodCall &call)
 {
     LOG("Requesting IMSI");
     std::string response = m_modem->sendCommand(CIMI_COMMAND);
-    std::string imsi = extractNumericEnumAsString(response);
-
     auto dbusResponse = call.createReply();
-
-    if (imsi.length() != IMSI_LENGTH){
-        ERROR("Unexpected IMSI response: {}. The ID should be 15 char long", response);
-        dbusResponse << "ERROR";
-        dbusResponse << response;
-    } else {
-        LOG("Received imsi: {}", imsi);
+    if (isResponseSuccess(response)) {
+        std::string imsi = extractNumericEnumAsString(response);
         dbusResponse << "OK";
         dbusResponse << imsi;
+    } else {
+        dbusResponse << getErrorMessage(response);
+        dbusResponse << response;
     }
 
     dbusResponse.send();
@@ -65,21 +66,17 @@ void SimCard::getPinState(sdbus::MethodCall &call)
     LOG("Query pin state");
     std::string cmd = CPIN_COMMAND + "?";
     std::string response = m_modem->sendCommand(cmd);
-
-    size_t stateStart = response.find("CPIN") + 6;
-    size_t stateEnd = response.find_first_of("\n\r", stateStart);
-    std::string pinState = response.substr(stateStart, stateEnd - stateStart);
-
     auto dbusResponse = call.createReply();
-    if (pinState.length() < 5 || pinState.length() > 13){
-        ERROR("Could not extract a meaningful pin state from response: {}", response);
-        dbusResponse << "ERROR";
-        dbusResponse << response;
-    } else {
-        LOG("Pin state: {}", pinState);
+
+    if (isResponseSuccess(response)) {
+        std::string state = extractSimpleState(response);
         dbusResponse << "OK";
-        dbusResponse << pinState;
+        dbusResponse << state;
+    } else {
+        dbusResponse << getErrorMessage(response);
+        dbusResponse << response;
     }
+
     dbusResponse.send();
 }
 

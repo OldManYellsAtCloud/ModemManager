@@ -69,7 +69,7 @@ std::string eg25Connection::getResponse(int timeout){
         }
     } while (timeNow() - startTimeMs < timeout);
 
-    ERROR("Have not received a response before {}ms timeout!", timeout);
+    DEBUG("Have not received a response before {}ms timeout!", timeout);
 
     return "";
 }
@@ -139,7 +139,7 @@ std::string eg25Connection::sendCommandAndExpectResponse(std::string cmd, std::s
 
     ERROR("Something is not right, could not find the expected response '{}' in the message '{}'. "
           "Please fix your program.", expectedResponse, response);
-    exit(1);
+    return response;
 }
 
 std::string eg25Connection::readOrWriteSerial(std::variant<std::string, size_t> cmdOrTimeout)

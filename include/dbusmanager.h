@@ -19,10 +19,14 @@ public:
                         std::string outputSignature, sdbus::method_callback callback);
     void finishRegistration();
     void signalCompletenessAndEnterEventLoop();
+    void signalCompletenessAndEnterEventLoopAsync();
     void finishRegistrationAndEnterLoop();
     bool hasEventLoopStarted();
     void sendReadySignal();
     void sendSignal(std::string interface, std::string name, std::string content);
+#ifdef TEST_ENABLED
+    sdbus::IConnection* getConnection();
+#endif
 };
 
 #endif // DBUSMANAGER_H

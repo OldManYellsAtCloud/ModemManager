@@ -36,6 +36,15 @@ void DbusManager::signalCompletenessAndEnterEventLoop()
     dbusConnection->enterEventLoop();
 }
 
+void DbusManager::signalCompletenessAndEnterEventLoopAsync()
+{
+    LOG("Entering dbus event loop async");
+    auto t = std::thread(&DbusManager::sendReadySignal, this);
+    eventLoopStarted = true;
+    dbusConnection->enterEventLoopAsync();
+    t.join();
+}
+
 void DbusManager::finishRegistrationAndEnterLoop()
 {
     finishRegistration();
@@ -63,3 +72,9 @@ void DbusManager::sendSignal(std::string interface, std::string name, std::strin
     signal.send();
 }
 
+#ifdef TEST_ENABLED
+sdbus::IConnection* DbusManager::getConnection()
+{
+    return dbusConnection.get();
+}
+#endif
