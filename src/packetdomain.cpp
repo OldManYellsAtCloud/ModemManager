@@ -6,9 +6,9 @@ PacketDomain::PacketDomain(ModemConnection* modem, DbusManager* dbusManager): m_
     auto enablePackedDomainCallback = [this](sdbus::MethodCall call){this->enablePacketDomain(call);};
     auto getPacketDomainStateCallback = [this](sdbus::MethodCall call){this->getPacketDomainState(call);};
     auto setApnCallback = [this](sdbus::MethodCall call){this->setApnSettings(call);};
-    m_dbusManager->registerMethod("org.gspine.modem.pd", "enable_pd", "b", "b", enablePackedDomainCallback);
-    m_dbusManager->registerMethod("org.gspine.modem.pd", "get_pd_state", "", "b", getPacketDomainStateCallback);
-    m_dbusManager->registerMethod("org.gspine.modem.pd", "set_apn", "s", "b", setApnCallback);
+    m_dbusManager->registerMethod(PD_DBUS_INTERFACE, "enable_pd", "b", "sb", enablePackedDomainCallback);
+    m_dbusManager->registerMethod(PD_DBUS_INTERFACE, "get_pd_state", "", "sb", getPacketDomainStateCallback);
+    m_dbusManager->registerMethod(PD_DBUS_INTERFACE, "set_apn", "s", "sb", setApnCallback);
 }
 
 void PacketDomain::enablePacketDomain(sdbus::MethodCall &call)
@@ -21,8 +21,14 @@ void PacketDomain::enablePacketDomain(sdbus::MethodCall &call)
 
     std::string response = m_modem->sendCommand(cmd, 140 * 1000);
     auto dbusResponse = call.createReply();
+    if (isResponseSuccess(response)){
+        dbusResponse << "OK";
+        dbusResponse << true;
+    } else {
+        dbusResponse << getErrorMessage(response);
+        dbusResponse << false;
+    }
 
-    dbusResponse << isResponseSuccess(response);
     dbusResponse.send();
 }
 
@@ -32,11 +38,16 @@ void PacketDomain::getPacketDomainState(sdbus::MethodCall &call)
     std::string cmd = GATT_COMMAND + "?";
     std::string response = m_modem->sendCommand(cmd, 140 * 1000);
 
-    int res = extractNumericEnum(response);
-    assert(res != NUMBER_NOT_FOUND);
-
     auto dbusResponse = call.createReply();
-    dbusResponse << (res > 0);
+    if (isResponseSuccess(response)){
+        int res = extractNumericEnum(response);
+        dbusResponse << "OK";
+        dbusResponse << (res > 0);
+    } else {
+        dbusResponse << getErrorMessage(response);
+        dbusResponse << false;
+    }
+
     dbusResponse.send();
 }
 
@@ -48,13 +59,14 @@ void PacketDomain::setApnSettings(sdbus::MethodCall &call)
     std::string cmd = CGDCONT_COMMAND + "=" + apnSettings;
     std::string response = m_modem->sendCommand(cmd);
     auto dbusResponse = call.createReply();
-
-    if (response.find("OK") != std::string::npos)
+    if (isResponseSuccess(response)){
+        dbusResponse << "OK";
         dbusResponse << true;
-    else
+    } else {
+        dbusResponse << getErrorMessage(response);
         dbusResponse << false;
+    }
 
     dbusResponse.send();
-
 }
 

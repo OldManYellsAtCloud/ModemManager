@@ -86,6 +86,7 @@ if (enable_test)
     set(TEST_SOURCES tests/misc_test.cpp
                      tests/general_test.cpp
                      tests/hw_test.cpp
+                     tests/pd_test.cpp
                      tests/mockmodem.h)
 
     add_executable(mm_tests ${HEADERS} ${SOURCES} ${TEST_SOURCES})

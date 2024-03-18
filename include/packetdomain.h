@@ -4,6 +4,8 @@
 #include "modemconnection.h"
 #include "dbusmanager.h"
 
+#define PD_DBUS_INTERFACE  "org.gspine.modem.pd"
+
 const std::string GATT_COMMAND = "AT+CGATT";
 const std::string CGDCONT_COMMAND = "AT+CGDCONT";
 
