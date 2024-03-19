@@ -8,7 +8,7 @@
 
 class eg25Connection: public ModemConnection
 #ifdef UI_ENABLED
-: public QObject
+, public QObject
 #endif
 {
 #ifdef UI_ENABLED
