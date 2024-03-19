@@ -91,6 +91,7 @@ if (enable_test)
                      tests/hw_test.cpp
                      tests/pd_test.cpp
                      tests/sim_test.cpp
+                     tests/urc_test.cpp
                      tests/mockmodem.h)
 
     add_executable(mm_tests ${HEADERS} ${SOURCES} ${TEST_SOURCES})

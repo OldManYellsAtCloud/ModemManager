@@ -18,12 +18,6 @@
 
 #define CONFIG_FOLDER  "/etc"
 
-void finishHandler(int signum){
-    std::cout << "Signal received: " << signum << std::endl;
-    //ec->stop_urc_loop();
-    exit(0);
-}
-
 #ifdef UI_ENABLED
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>

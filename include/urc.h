@@ -10,10 +10,10 @@ class Urc
     ModemConnection* m_modem;
     DbusManager* m_dbusManager;
     std::jthread urcThread;
-    void listToUrc(std::stop_token st);
+    void listenToUrc(std::stop_token st);
 public:
     Urc(ModemConnection* modem, DbusManager* dbusManager);
-    void stop();
+    ~Urc();
 };
 
 #endif // URC_H

@@ -1,19 +1,20 @@
 #include "urc.h"
 #include <chrono>
-
+#include <loglibrary.h>
 
 Urc::Urc(ModemConnection *modem, DbusManager *dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
 {
-    urcThread = std::jthread(&Urc::listToUrc, this);
+    urcThread = std::jthread(&Urc::listenToUrc, this);
     m_dbusManager->registerSignal("org.gspine.modem", "urc", "s");
 }
 
-void Urc::stop()
+Urc::~Urc()
 {
+    LOG("Urc object done");
     urcThread.request_stop();
 }
 
-void Urc::listToUrc(std::stop_token st)
+void Urc::listenToUrc(std::stop_token st)
 {
     // wait for system to start up
     while (!m_dbusManager->hasEventLoopStarted())
