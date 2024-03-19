@@ -3,19 +3,16 @@
 
 #include <loglibrary.h>
 
-#define IMSI_LENGTH  15
-#define NUMBERS "0123456789"
-
 SimCard::SimCard(ModemConnection* modem, DbusManager* dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
 {
     auto enterPinCallback = [this](sdbus::MethodCall call){this->enterPin(call);};
     auto getImsiCallback = [this](sdbus::MethodCall call){this->getImsi(call);};
     auto getPinStateCallback = [this](sdbus::MethodCall call){this->getPinState(call);};
     auto getPinRemainderCounterCallback = [this](sdbus::MethodCall call){this->getPinRemainderCounter(call);};
-    m_dbusManager->registerMethod("org.gspine.modem.sim", "pin_enter", "s", "ss", enterPinCallback);
-    m_dbusManager->registerMethod("org.gspine.modem.sim", "get_imsi", "", "ss", getImsiCallback);
-    m_dbusManager->registerMethod("org.gspine.modem.sim", "get_pin_state", "", "ss", getPinStateCallback);
-    m_dbusManager->registerMethod("org.gspine.modem.sim", "get_pin_counter", "s", "sii", getPinRemainderCounterCallback);
+    m_dbusManager->registerMethod(SIM_DBUS_INTERFACE, "pin_enter", "s", "ss", enterPinCallback);
+    m_dbusManager->registerMethod(SIM_DBUS_INTERFACE, "get_imsi", "", "ss", getImsiCallback);
+    m_dbusManager->registerMethod(SIM_DBUS_INTERFACE, "get_pin_state", "", "ss", getPinStateCallback);
+    m_dbusManager->registerMethod(SIM_DBUS_INTERFACE, "get_pin_counter", "s", "sii", getPinRemainderCounterCallback);
 }
 
 void SimCard::enterPin(sdbus::MethodCall &call)
@@ -86,22 +83,23 @@ void SimCard::getPinRemainderCounter(sdbus::MethodCall &call)
     std::string type;
     call >> type;
 
-    if (type[0] != '"')
-        type = "\"" + type;
-
-    if (type[type.length() - 1] != '"')
-        type += "\"";
+    type = quoteString(type);
+    auto dbusResponse = call.createReply();
 
     if (type != "\"SC\"" && type != "\"P2\""){
-        ERROR("Incorrect pin counter requested: {}", type);
+        dbusResponse << "Error: invalid pin counter requested: " + type;
+        dbusResponse << 0 << 0;
+        dbusResponse.send();
         return;
-    } else {
-        std::string cmd = PINC_COMMAND + "=" + type;
-        std::string response = m_modem->sendCommand(cmd);
-        LOG("Pin counter response: {}", response);
+    }
+
+    std::string cmd = PINC_COMMAND + "=" + type;
+    std::string response = m_modem->sendCommand(cmd);
+    LOG("Pin counter response: {}", response);
+    if (isResponseSuccess(response )){
         size_t c1Start = response.find(",");
         size_t c1End = response.find(",", c1Start + 1);
-        size_t c2End = response.find_first_of(" \t\n\r", c1End + 1);
+        size_t c2End = response.find_first_of("\n\r", c1End + 1);
 
         std::string pinCounterS = response.substr(c1Start + 1, c1End - c1Start - 1);
         std::string pukCounterS = response.substr(c1End + 1, c2End - c1End - 1);
@@ -110,16 +108,21 @@ void SimCard::getPinRemainderCounter(sdbus::MethodCall &call)
         try {
             pinCounter = std::stoi(pinCounterS);
             pukCounter = std::stoi(pukCounterS);
+            LOG("Remaning pin: {}, puk: {}", pinCounter, pukCounter);
+            dbusResponse << "OK";
+            dbusResponse << pinCounter << pukCounter;
         } catch (std::exception e){
-            ERROR("Could not extract pin counter! Error: {}", e.what());
-            return;
+            dbusResponse << e.what();
+            dbusResponse << 0 << 0;
         }
-        LOG("Remaning pin: {}, puk: {}", pinCounter, pukCounter);
-        auto dbusResponse = call.createReply();
-        dbusResponse << pinCounter;
-        dbusResponse << pukCounter;
-        dbusResponse.send();
+
+    } else {
+        dbusResponse << "Error: " + getErrorMessage(response);
+        dbusResponse << 0 << 0;
     }
+
+    dbusResponse.send();
+
 }
 
 

@@ -99,3 +99,15 @@ std::vector<std::string> flattenAndSplitString(std::string s, std::string delim)
     s = flattenString(s);
     return splitString(s, delim);
 }
+
+std::string quoteString(std::string &s)
+{
+    std::string ret;
+    if (s[0] != '\"')
+        ret = "\"";
+
+    ret += s;
+    if (s[s.length() - 1] != '\"')
+        ret += "\"";
+    return ret;
+}

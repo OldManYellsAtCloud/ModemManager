@@ -4,6 +4,8 @@
 #include "modemconnection.h"
 #include "dbusmanager.h"
 
+#define SIM_DBUS_INTERFACE "org.gspine.modem.sim"
+
 const std::string CPIN_COMMAND = "AT+CPIN";
 const std::string CIMI_COMMAND = "AT+CIMI";
 const std::string PINC_COMMAND = "AT+QPINC";

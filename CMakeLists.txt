@@ -83,17 +83,17 @@ if (enable_test)
     find_package(GTest REQUIRED)
     enable_testing()
 
+    include(GoogleTest)
+
+
     set(TEST_SOURCES tests/misc_test.cpp
                      tests/general_test.cpp
                      tests/hw_test.cpp
                      tests/pd_test.cpp
+                     tests/sim_test.cpp
                      tests/mockmodem.h)
 
     add_executable(mm_tests ${HEADERS} ${SOURCES} ${TEST_SOURCES})
-
-    include(GoogleTest)
-
-
 
     target_include_directories(mm_tests PRIVATE include)
     target_link_directories(mm_tests PRIVATE $ENV{CMAKE_SYSROOT}/usr/lib)
