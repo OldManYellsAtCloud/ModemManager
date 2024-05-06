@@ -69,7 +69,7 @@ std::string eg25Connection::getResponse(int timeout){
         }
     } while (timeNow() - startTimeMs < timeout);
 
-    DEBUG("Have not received a response before {}ms timeout!", timeout);
+    DBG("Have not received a response before {}ms timeout!", timeout);
 
     return "";
 }
