@@ -83,7 +83,7 @@ void SimCard::getPinRemainderCounter(sdbus::MethodCall &call)
     std::string type;
     call >> type;
 
-    type = quoteString(type);
+    quoteString(type);
     auto dbusResponse = call.createReply();
 
     if (type != "\"SC\"" && type != "\"P2\""){

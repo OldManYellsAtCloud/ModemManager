@@ -24,10 +24,23 @@ public:
     void finishRegistrationAndEnterLoop();
     bool hasEventLoopStarted();
     void sendReadySignal();
-    void sendSignal(std::string interface, std::string name, std::string content);
+
+    template<class ... cnt>
+    void sendSignal(std::string interface, std::string name, cnt&& ... content);
+    //void sendSignal(std::string interface, std::string name, std::string content);
 #ifdef TEST_ENABLED
     sdbus::IConnection* getConnection();
 #endif
 };
+
+template<class... cnt>
+void DbusManager::sendSignal(std::string interface, std::string name, cnt&& ... contents)
+{
+    auto signal = dbusObject->createSignal(interface, name);
+    for (auto& content: {contents...})
+        signal << content;
+
+    signal.send();
+}
 
 #endif // DBUSMANAGER_H

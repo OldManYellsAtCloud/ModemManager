@@ -70,12 +70,23 @@ void DbusManager::sendReadySignal()
     signal.send();
 }
 
+/*
+template<class... cnt>
+void DbusManager::sendSignal(std::string interface, std::string name, cnt&& ... contents)
+{
+    auto signal = dbusObject->createSignal(interface, name);
+    for (auto& content: {contents...})
+        signal << content;
+
+    signal.send();
+}
+
 void DbusManager::sendSignal(std::string interface, std::string name, std::string content)
 {
     auto signal = dbusObject->createSignal(interface, name);
     signal << content;
     signal.send();
-}
+}*/
 
 #ifdef TEST_ENABLED
 sdbus::IConnection* DbusManager::getConnection()

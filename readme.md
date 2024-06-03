@@ -59,3 +59,18 @@ Signals:
 | interface | signal name | signature | comments |
 | --------- | ----------- | --------- | -------- |
 | org.gspine.modem | urc | s | Sent when something not expected happens: phone rings, message arrived... |
+
+### Network Service
+
+Methods:
+
+| interface |  method name | input signature | output signature | comments |
+| --------- | ------------ | --------------- | ---------------- | -------- |
+| org.gspine.modem.ns | get_operator | n/a | ss | Name of currently registered network operator. |
+| org.gspine.modem.ns | get_signal_quality | n/a | ssd | Returns two values. The first is the RSSI (as dBm, string), and the other one is the bit error rate, as a percentage (between 0 and 1). |
+
+Signals:
+
+| interface | signal name | signature | comments |
+| --------- | ----------- | --------- | -------- |
+| org.gspine.modem | signalQuality | ss | Broadcasted every 30 seconds. First string is the current operator name, the second is the current signal quality. |

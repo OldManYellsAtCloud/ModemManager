@@ -100,14 +100,11 @@ std::vector<std::string> flattenAndSplitString(std::string s, std::string delim)
     return splitString(s, delim);
 }
 
-std::string quoteString(std::string &s)
+void quoteString(std::string &s)
 {
-    std::string ret;
-    if (s[0] != '\"')
-        ret = "\"";
+    if (s[0] != '"')
+        s.insert(s.begin(), '"');
 
-    ret += s;
-    if (s[s.length() - 1] != '\"')
-        ret += "\"";
-    return ret;
+    if (s[s.length() - 1] != '"')
+        s.append(1, '"');
 }

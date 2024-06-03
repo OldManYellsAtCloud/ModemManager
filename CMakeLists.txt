@@ -25,6 +25,7 @@ set(SOURCES src/eg25connection.cpp
             src/packetdomain.cpp
             src/general.cpp
             src/responseextractors.cpp
+            src/networkservice.cpp
             src/urc.cpp)
 
 set(HEADERS include/eg25connection.h
@@ -35,6 +36,7 @@ set(HEADERS include/eg25connection.h
             include/general.h
             include/responseextractors.h
             include/modemconnection.h
+            include/networkservice.h
             include/urc.h
         )
 
@@ -78,6 +80,11 @@ install(FILES org.gspine.modem.conf
 target_link_libraries(modemmanager PRIVATE SettingsLib Qt6::SerialPort sdbus-c++)
 
 option(enable_test "Compile and run tests" OFF)
+option(no_test_left_behind "Include even the disabled tests" OFF)
+
+if (no_test_left_behind)
+    add_compile_definitions("NO_TEST_LEFT_BEHIND")
+endif()
 
 if (enable_test)
     find_package(GTest REQUIRED)
@@ -92,6 +99,7 @@ if (enable_test)
                      tests/pd_test.cpp
                      tests/sim_test.cpp
                      tests/urc_test.cpp
+                     tests/ns_test.cpp
                      tests/mockmodem.h)
 
     add_executable(mm_tests ${HEADERS} ${SOURCES} ${TEST_SOURCES})

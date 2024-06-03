@@ -70,7 +70,7 @@ TEST(Sim_Suite, EnterPinWrongPin){
 
 TEST(Sim_Suite, GetPinState){
     SETUP
-    EXPECT_CALL(modem, sendCommand("AT+CPIN?", 300)).Times(1).WillOnce(Return("\r\n\r\+CPIN: READY\r\n\r\nOK\r\n"));
+    EXPECT_CALL(modem, sendCommand("AT+CPIN?", 300)).Times(1).WillOnce(Return("\r\n\r+CPIN: READY\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(SIM_DBUS_INTERFACE, "get_pin_state");
     auto response = dbusProxy->callMethod(method);
     std::string requestState, pinState;
@@ -82,7 +82,7 @@ TEST(Sim_Suite, GetPinState){
 
 TEST(Sim_Suite, GetPinStateMultiWord){
     SETUP
-        EXPECT_CALL(modem, sendCommand("AT+CPIN?", 300)).Times(1).WillOnce(Return("\r\n\r\+CPIN: VERY READY\r\n\r\nOK\r\n"));
+        EXPECT_CALL(modem, sendCommand("AT+CPIN?", 300)).Times(1).WillOnce(Return("\r\n\r+CPIN: VERY READY\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(SIM_DBUS_INTERFACE, "get_pin_state");
     auto response = dbusProxy->callMethod(method);
     std::string requestState, pinState;

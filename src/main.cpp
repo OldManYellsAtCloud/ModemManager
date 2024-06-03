@@ -1,10 +1,7 @@
-#include <iostream>
 #include <string>
 #include <unistd.h>
 #include <cassert>
-#include <csignal>
 #include <settingslib.h>
-#include <memory>
 #include <loglibrary.h>
 
 #include "eg25connection.h"
@@ -12,6 +9,7 @@
 
 #include "simcard.h"
 #include "hardware.h"
+#include "networkservice.h"
 #include "packetdomain.h"
 #include "general.h"
 #include "urc.h"
@@ -63,6 +61,7 @@ int main(int argc, char* argv[])
     PacketDomain pd{&modem, &dbusManager};
     General general{&modem, &dbusManager};
     Urc urc{&modem, &dbusManager};
+    NetworkService network{&modem, &dbusManager};
 
     dbusManager.finishRegistrationAndEnterLoop();
 

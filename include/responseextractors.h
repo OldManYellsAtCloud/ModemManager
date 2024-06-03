@@ -48,6 +48,6 @@ std::string getErrorMessage(const std::string& s);
 std::string extractSimpleState(const std::string& s);
 std::vector<std::string> splitString(std::string s, std::string delim);
 std::vector<std::string> flattenAndSplitString(std::string s, std::string delim);
-std::string quoteString(std::string& s);
+void quoteString(std::string& s);
 
 #endif // RESPONSEEXTRACTORS_H
