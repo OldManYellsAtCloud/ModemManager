@@ -218,3 +218,35 @@ TEST(Ns_Suite, GetSignalQualityRssi99Ber99){
     EXPECT_EQ("N/A", rssi);
     EXPECT_EQ(-1, error_rate);
 }
+
+TEST(Ns_Suite, GetNetworkRegistrationStatus){
+    SETUP
+    EXPECT_CALL(modem, sendCommand("AT+CREG?", 300)).Times(1).WillOnce(Return("\r\n\r\n+CREG: 0,0\r\n\r\nOK\r\n"));
+    EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(0)).WillRepeatedly(Return("\r\n\r\n+CSQ: 99,7\r\n\r\nOK\r\n"));
+    EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(0)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
+    auto method = dbusProxy->createMethodCall(NS_DBUS_INTERFACE, "get_network_registration_status");
+    auto response = dbusProxy->callMethod(method);
+    std::string status, urc_status, reg_status, location, cell_id, access_tech;
+    std::vector<std::string> regStatus;
+    response >> status;
+    response >> regStatus;
+    EXPECT_EQ("OK", status);
+    EXPECT_EQ("disabled", regStatus[0]);
+    EXPECT_EQ("not_registered", regStatus[1]);
+    EXPECT_EQ(2, regStatus.size());
+}
+
+TEST(Ns_Suite, GetNetworkRegistrationStatusError){
+    SETUP
+    EXPECT_CALL(modem, sendCommand("AT+CREG?", 300)).Times(1).WillOnce(Return("\r\n\r\n+CREG: 0,0\r\n\r\n+CME ERROR: 5\r\n"));
+    EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(0)).WillRepeatedly(Return("\r\n\r\n+CSQ: 99,7\r\n\r\nOK\r\n"));
+    EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(0)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
+    auto method = dbusProxy->createMethodCall(NS_DBUS_INTERFACE, "get_network_registration_status");
+    auto response = dbusProxy->callMethod(method);
+    std::string status, urc_status, reg_status, location, cell_id, access_tech;
+    std::vector<std::string> regStatus;
+    response >> status;
+    response >> regStatus;
+    EXPECT_EQ("ERROR: Phone failure", status);
+    EXPECT_EQ(0, regStatus.size());
+}

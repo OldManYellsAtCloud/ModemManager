@@ -11,6 +11,7 @@
 
 const std::string COPS_COMMAND {"AT+COPS"};
 const std::string CSQ_COMMAND {"AT+CSQ"};
+const std::string CREG_COMMAND {"AT+CREG"};
 
 class NetworkService
 {
@@ -20,6 +21,9 @@ private:
     std::jthread periodicNetworkReport;
 
     static std::map<int, double> berDict;
+    static std::map<int, std::string> urcStateDict;
+    static std::map<int, std::string> regStateDict;
+    static std::map<int, std::string> accessTechDict;
 
     void operatorAndSignalStrengthThread();
     std::string getOperatorResponse();
@@ -30,11 +34,22 @@ private:
     double extractBerAverage(int i);
     double extractBerAverage(std::string s);
     void networkReportLoop(std::stop_token stop_token);
+
+    std::string extractNetworkUrcState(int i);
+    std::string extractNetworkUrcState(std::string s);
+
+    std::string extractRegistrationState(int i);
+    std::string extractRegistrationState(std::string s);
+
+    std::string extractAccessTechnology(int i);
+    std::string extractAccessTechnology(std::string s);
+
 public:
     NetworkService(ModemConnection* modem, DbusManager* dbusManager);
     ~NetworkService();
     void getOperator(sdbus::MethodCall& call);
     void getSignalQuality(sdbus::MethodCall& call);
+    void getNetworkRegistrationStatus(sdbus::MethodCall& call);
 
 };
 

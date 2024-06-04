@@ -68,6 +68,7 @@ Methods:
 | --------- | ------------ | --------------- | ---------------- | -------- |
 | org.gspine.modem.ns | get_operator | n/a | ss | Name of currently registered network operator. |
 | org.gspine.modem.ns | get_signal_quality | n/a | ssd | Returns two values. The first is the RSSI (as dBm, string), and the other one is the bit error rate, as a percentage (between 0 and 1). |
+| org.gspine.modem.ns | get_network_registration_status | n/a | sas | Returns an array of strings, maximum 5 elements. First element indicates if an URC is sent upon registration (disabled, enabled, enabled_with_location). The second indicates the current registration status (not_registered, registered_home, not_registered_searching, registration_denied, unknown, registered_roaming). The 3rd contains location area code, and the 4th is the cell id. The 5th indicates the currently used access technology. Elements 3-5 are optional, and might not be present. |
 
 Signals:
 

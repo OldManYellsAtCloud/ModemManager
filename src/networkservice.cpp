@@ -13,12 +13,29 @@ std::map<int, double> NetworkService::berDict {
     {4, 2.26}, {5, 4.53}, {6, 9.05}, {7, 18.1}
 };
 
+std::map<int, std::string> NetworkService::urcStateDict {
+    {0, "disabled"}, {1, "enabled"}, {2, "enabled_with_location"}
+};
+
+std::map<int, std::string> NetworkService::regStateDict {
+    {0, "not_registered"}, {1, "registered_home"},
+    {2, "not_registered_searching"}, {3, "registration_denied"},
+    {4, "unknown"}, {5, "registered_roaming"}
+};
+
+std::map<int, std::string> NetworkService::accessTechDict {
+    {0, "GSM"}, {1, "UTRAN"}, {2, "GSM/EGPRS"}, {3, "UTRAN/HSDPA"},
+    {4, "UTRAN/HSUPA"}, {5, "UTRAN/HSDPA/HSUPA"}, {6, "E-UTRAN"}
+};
+
 NetworkService::NetworkService(ModemConnection* modem, DbusManager* dbusManager): m_modem {modem}, m_dbusManager {dbusManager}
 {
     auto getOperatorCallback = [this](sdbus::MethodCall call){this->getOperator(call);};
     auto getSignalQualityCallback = [this](sdbus::MethodCall call){this->getSignalQuality(call);};
+    auto getNetworkRegistrationStatusCallback = [this](sdbus::MethodCall call){this->getNetworkRegistrationStatus(call);};
     m_dbusManager->registerMethod(NS_DBUS_INTERFACE, "get_operator", "", "ss", getOperatorCallback);
     m_dbusManager->registerMethod(NS_DBUS_INTERFACE, "get_signal_quality", "", "ssd", getSignalQualityCallback);
+    m_dbusManager->registerMethod(NS_DBUS_INTERFACE, "get_network_registration_status", "", "sas", getNetworkRegistrationStatusCallback);
     m_dbusManager->registerSignal("org.gspine.modem", "signalQuality", "ss");
 
     periodicNetworkReport = std::jthread(&NetworkService::networkReportLoop, this);
@@ -62,6 +79,60 @@ void NetworkService::networkReportLoop(std::stop_token stop_token)
 
         m_dbusManager->sendSignal("org.gspine.modem", "signalQuality", operatorName, rssi);
     }
+}
+
+std::string NetworkService::extractNetworkUrcState(int i)
+{
+    if (urcStateDict.contains(i))
+        return urcStateDict[i];
+    return "N/A";
+}
+
+std::string NetworkService::extractNetworkUrcState(std::string s)
+{
+    try {
+        int i = std::stoi(s);
+        return extractNetworkUrcState(i);
+    } catch (std::exception e) {
+        ERROR("Could not extract URC state: {}, error: {}", s, e.what());
+    }
+    return "N/A";
+}
+
+std::string NetworkService::extractRegistrationState(int i)
+{
+    if (regStateDict.contains(i))
+        return regStateDict[i];
+    return "N/A";
+}
+
+std::string NetworkService::extractRegistrationState(std::string s)
+{
+    try {
+        int i = std::stoi(s);
+        return extractRegistrationState(i);
+    } catch (std::exception e) {
+        ERROR("Could not extract network registration state: {}, error: {}", s, e.what());
+    }
+    return "N/A";
+}
+
+std::string NetworkService::extractAccessTechnology(int i)
+{
+    if (accessTechDict.contains(i))
+        return accessTechDict[i];
+    return "N/A";
+}
+
+std::string NetworkService::extractAccessTechnology(std::string s)
+{
+    try {
+        int i = std::stoi(s);
+        return extractRegistrationState(i);
+    } catch (std::exception e) {
+        ERROR("Could not extract access technology: {}, error: {}", s, e.what());
+    }
+    return "N/A";
 }
 
 std::string NetworkService::getOperatorResponse()
@@ -143,6 +214,35 @@ void NetworkService::getOperator(sdbus::MethodCall &call)
     dbusResponse.send();
 }
 
+void NetworkService::getNetworkRegistrationStatus(sdbus::MethodCall &call)
+{
+    auto dbusResponse = call.createReply();
+    std::string cmd {CREG_COMMAND + "?"};
+    std::string response = m_modem->sendCommand(cmd);
+    std::vector<std::string> regStatus;
+
+    if (isResponseSuccess(response)){
+        response = extractSimpleState(response);
+        dbusResponse << "OK";
+        std::vector<std::string> splitResponse = splitString(response, ",");
+        regStatus.push_back(extractNetworkUrcState(splitResponse[0]));
+        regStatus.push_back(extractRegistrationState(splitResponse[1]));
+        if (splitResponse.size() >= 4) {
+            regStatus.push_back(splitResponse[2]);
+            regStatus.push_back(splitResponse[3]);
+        }
+
+        if (splitResponse.size() > 4)
+            regStatus.push_back(extractAccessTechnology(splitResponse[4]));
+    } else {
+        std::string message {"ERROR: " + getErrorMessage(response)};
+        dbusResponse << message;
+    }
+
+    dbusResponse << regStatus;
+    dbusResponse.send();
+}
+
 
 double NetworkService::extractBerAverage(int i)
 {
@@ -180,4 +280,6 @@ void NetworkService::getSignalQuality(sdbus::MethodCall &call)
     }
     dbusResponse.send();
 }
+
+
 
