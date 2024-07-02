@@ -18,7 +18,6 @@ public:
     void registerSignal(std::string interface, std::string name, std::string signature);
     void registerMethod(std::string interface, std::string name, std::string inputSignature,
                         std::string outputSignature, sdbus::method_callback callback);
-    void finishRegistration();
     void signalCompletenessAndEnterEventLoop();
     void signalCompletenessAndEnterEventLoopAsync();
     void finishRegistrationAndEnterLoop();
@@ -36,7 +35,7 @@ public:
 template<class... cnt>
 void DbusManager::sendSignal(std::string interface, std::string name, cnt&& ... contents)
 {
-    auto signal = dbusObject->createSignal(interface, name);
+    auto signal = dbusObject->createSignal(sdbus::InterfaceName{interface}, sdbus::SignalName{name});
     for (auto& content: {contents...})
         signal << content;
 

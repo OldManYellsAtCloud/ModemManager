@@ -4,8 +4,8 @@
 #include <thread>
 
 DbusManager::DbusManager() {
-    dbusConnection = sdbus::createSystemBusConnection(MAIN_DBUS_SERVICE_NAME);
-    dbusObject = sdbus::createObject(*dbusConnection, MAIN_DBUS_OBJECT_PATH);
+    dbusConnection = sdbus::createBusConnection(sdbus::ServiceName{MAIN_DBUS_SERVICE_NAME});
+    dbusObject = sdbus::createObject(*dbusConnection, sdbus::ObjectPath{MAIN_DBUS_OBJECT_PATH});
 }
 
 DbusManager::~DbusManager()
@@ -17,20 +17,14 @@ void DbusManager::registerSignal(std::string interface, std::string name, std::s
 {
     LOG("Registering dbus signal. Iface: {}, name: {}, signature: {}",
         interface, name, signature);
-    dbusObject->registerSignal(interface, name, signature);
+    dbusObject->addVTable(sdbus::SignalVTableItem{sdbus::MethodName{name}, sdbus::Signature{signature}, {}}).forInterface(sdbus::InterfaceName{interface});
 }
 
 void DbusManager::registerMethod(std::string interface, std::string name, std::string inputSignature, std::string outputSignature, sdbus::method_callback callback)
 {
     LOG("Registering dbus method. Iface: {}, name: {}, iSignature: {}, oSignature: {}",
         interface, name, inputSignature, outputSignature);
-    dbusObject->registerMethod(interface, name, inputSignature, outputSignature, callback);
-}
-
-void DbusManager::finishRegistration()
-{
-    LOG("Finishing dbus signal and method registration.");
-    dbusObject->finishRegistration();
+    dbusObject->addVTable(sdbus::MethodVTableItem{sdbus::MethodName{name}, sdbus::Signature{inputSignature}, {}, sdbus::Signature{outputSignature}, {}, callback}).forInterface(sdbus::InterfaceName{interface});
 }
 
 void DbusManager::signalCompletenessAndEnterEventLoop()
@@ -52,7 +46,6 @@ void DbusManager::signalCompletenessAndEnterEventLoopAsync()
 
 void DbusManager::finishRegistrationAndEnterLoop()
 {
-    finishRegistration();
     signalCompletenessAndEnterEventLoop();
 }
 
@@ -66,27 +59,9 @@ void DbusManager::sendReadySignal()
     do {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     } while (!hasEventLoopStarted());
-    auto signal = dbusObject->createSignal("org.gspine.modem", "present");
+    auto signal = dbusObject->createSignal(sdbus::InterfaceName{"org.gspine.modem"}, sdbus::SignalName{"present"});
     signal.send();
 }
-
-/*
-template<class... cnt>
-void DbusManager::sendSignal(std::string interface, std::string name, cnt&& ... contents)
-{
-    auto signal = dbusObject->createSignal(interface, name);
-    for (auto& content: {contents...})
-        signal << content;
-
-    signal.send();
-}
-
-void DbusManager::sendSignal(std::string interface, std::string name, std::string content)
-{
-    auto signal = dbusObject->createSignal(interface, name);
-    signal << content;
-    signal.send();
-}*/
 
 #ifdef TEST_ENABLED
 sdbus::IConnection* DbusManager::getConnection()
