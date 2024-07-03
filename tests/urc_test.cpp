@@ -25,12 +25,10 @@ TEST(Urc_Suite, UrcTest){
     Urc u{&modem, &dm};
     EXPECT_CALL(modem, readSerial(500)).Times(AtLeast(5)).WillRepeatedly(Return("xxx"));
 
-    dm.finishRegistration();
     dm.signalCompletenessAndEnterEventLoopAsync();
 
-    auto dbusProxy = sdbus::createProxy(*dm.getConnection(), "org.gspine.modem", "/org/gspine/modem");
-    dbusProxy->registerSignalHandler("org.gspine.modem", "urc", dbusSignalHandler);
-    dbusProxy->finishRegistration();
+    auto dbusProxy = sdbus::createProxy(*dm.getConnection(), sdbus::ServiceName{"org.gspine.modem"}, sdbus::ObjectPath{"/org/gspine/modem"});
+    dbusProxy->registerSignalHandler(sdbus::InterfaceName{"org.gspine.modem"}, sdbus::SignalName{"urc"}, dbusSignalHandler);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     for (std::string s: dbusSignals) {

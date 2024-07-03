@@ -8,16 +8,15 @@
 #define SETUP MockModem modem{}; \
         DbusManager dm{}; \
         PacketDomain p{&modem, &dm}; \
-        dm.finishRegistration(); \
         dm.signalCompletenessAndEnterEventLoopAsync(); \
-        auto dbusProxy = sdbus::createProxy(*dm.getConnection(), "org.gspine.modem", "/org/gspine/modem");
+        auto dbusProxy = sdbus::createProxy(*dm.getConnection(), sdbus::ServiceName{"org.gspine.modem"}, sdbus::ObjectPath{"/org/gspine/modem"});
 
 using ::testing::Return;
 
 TEST(Pd_Suite, EnablePd){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CGATT=1", 140000)).Times(1).WillOnce(Return("\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(PD_DBUS_INTERFACE, "enable_pd");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{PD_DBUS_INTERFACE}, sdbus::MethodName{"enable_pd"});
     method << true;
     auto response = dbusProxy->callMethod(method);
     std::string status;
@@ -31,7 +30,7 @@ TEST(Pd_Suite, EnablePd){
 TEST(Pd_Suite, DisablePd){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CGATT=0", 140000)).Times(1).WillOnce(Return("\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(PD_DBUS_INTERFACE, "enable_pd");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{PD_DBUS_INTERFACE}, sdbus::MethodName{"enable_pd"});
     method << false;
     auto response = dbusProxy->callMethod(method);
     std::string status;
@@ -45,7 +44,7 @@ TEST(Pd_Suite, DisablePd){
 TEST(Pd_Suite, DisablePdWithErrorState){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CGATT=0", 140000)).Times(1).WillOnce(Return("\r\n\r\nERROR\r\n"));
-    auto method = dbusProxy->createMethodCall(PD_DBUS_INTERFACE, "enable_pd");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{PD_DBUS_INTERFACE}, sdbus::MethodName{"enable_pd"});
     method << false;
     auto response = dbusProxy->callMethod(method);
     std::string status;
@@ -59,7 +58,7 @@ TEST(Pd_Suite, DisablePdWithErrorState){
 TEST(Pd_Suite, GetPdState_Enabled){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CGATT?", 140000)).Times(1).WillOnce(Return("\r\n\r\n+CGATT: 1\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(PD_DBUS_INTERFACE, "get_pd_state");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{PD_DBUS_INTERFACE}, sdbus::MethodName{"get_pd_state"});
     auto response = dbusProxy->callMethod(method);
     std::string status;
     bool pdState;
@@ -72,7 +71,7 @@ TEST(Pd_Suite, GetPdState_Enabled){
 TEST(Pd_Suite, GetPdState_Disabled){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CGATT?", 140000)).Times(1).WillOnce(Return("\r\n\r\n+CGATT: 0\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(PD_DBUS_INTERFACE, "get_pd_state");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{PD_DBUS_INTERFACE}, sdbus::MethodName{"get_pd_state"});
     auto response = dbusProxy->callMethod(method);
     std::string status;
     bool pdState;
@@ -85,7 +84,7 @@ TEST(Pd_Suite, GetPdState_Disabled){
 TEST(Pd_Suite, SetAPN){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CGDCONT=testapn,here,\"is\",another,word", 300)).Times(1).WillOnce(Return("\r\n\r\n+CGATT: 0\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(PD_DBUS_INTERFACE, "set_apn");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{PD_DBUS_INTERFACE}, sdbus::MethodName{"set_apn"});
     method << "testapn,here,\"is\",another,word";
     auto response = dbusProxy->callMethod(method);
     std::string status;

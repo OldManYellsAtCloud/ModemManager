@@ -8,15 +8,14 @@
 #define SETUP MockModem modem{}; \
               DbusManager dm{}; \
               General g{&modem, &dm}; \
-              dm.finishRegistration(); \
               dm.signalCompletenessAndEnterEventLoopAsync(); \
-              auto dbusProxy = sdbus::createProxy(*dm.getConnection(), "org.gspine.modem", "/org/gspine/modem");
+              auto dbusProxy = sdbus::createProxy(*dm.getConnection(), sdbus::ServiceName{"org.gspine.modem"}, sdbus::ObjectPath{"/org/gspine/modem"});
 
 using ::testing::Return;
 
 TEST(General_Suite, SetFullFunctionality){
     SETUP
-    auto method = dbusProxy->createMethodCall(GENERAL_DBUS_INTERFACE, "set_functionality_level");
+        auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"set_functionality_level"});
     EXPECT_CALL(modem, sendCommand("AT+CFUN=1", 15000)).Times(1).WillOnce(Return("\r\n\r\nOK"));
     method << "Full";
     auto response = dbusProxy->callMethod(method);
@@ -30,7 +29,7 @@ TEST(General_Suite, SetFullFunctionality){
 
 TEST(General_Suite, SetMinFunctionality){
     SETUP
-    auto method = dbusProxy->createMethodCall(GENERAL_DBUS_INTERFACE, "set_functionality_level");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"set_functionality_level"});
     EXPECT_CALL(modem, sendCommand("AT+CFUN=0", 15000)).Times(1).WillOnce(Return("\r\n\r\nOK"));
     method << "Min";
     auto response = dbusProxy->callMethod(method);
@@ -44,7 +43,7 @@ TEST(General_Suite, SetMinFunctionality){
 
 TEST(General_Suite, SetDisable){
     SETUP
-    auto method = dbusProxy->createMethodCall(GENERAL_DBUS_INTERFACE, "set_functionality_level");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"set_functionality_level"});
     EXPECT_CALL(modem, sendCommand("AT+CFUN=4", 15000)).Times(1).WillOnce(Return("\r\n\r\nOK"));
     method << "Disable";
     auto response = dbusProxy->callMethod(method);
@@ -58,7 +57,7 @@ TEST(General_Suite, SetDisable){
 
 TEST(General_Suite, SetNonExistingFunctionalityLevel){
     SETUP
-    auto method = dbusProxy->createMethodCall(GENERAL_DBUS_INTERFACE, "set_functionality_level");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"set_functionality_level"});
     method << "non_existing";
     auto response = dbusProxy->callMethod(method);
     std::string res;
@@ -73,7 +72,7 @@ TEST(General_Suite, SetNonExistingFunctionalityLevel){
 TEST(General_Suite, GetFullFunctionalityState){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CFUN?", 15000)).Times(1).WillOnce(Return("\r\n+CFUN: 1\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(GENERAL_DBUS_INTERFACE, "get_functionality_level");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"get_functionality_level"});
     auto response = dbusProxy->callMethod(method);
     std::string status, res;
     response >> status;
@@ -85,7 +84,7 @@ TEST(General_Suite, GetFullFunctionalityState){
 TEST(General_Suite, GetMinFunctionalityState){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CFUN?", 15000)).Times(1).WillOnce(Return("\r\n+CFUN: 0\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(GENERAL_DBUS_INTERFACE, "get_functionality_level");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"get_functionality_level"});
     auto response = dbusProxy->callMethod(method);
     std::string status, res;
     response >> status;
@@ -97,7 +96,7 @@ TEST(General_Suite, GetMinFunctionalityState){
 TEST(General_Suite, GetDisabledFunctionalityState){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CFUN?", 15000)).Times(1).WillOnce(Return("\r\n+CFUN: 4\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(GENERAL_DBUS_INTERFACE, "get_functionality_level");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"get_functionality_level"});
     auto response = dbusProxy->callMethod(method);
     std::string status, res;
     response >> status;
@@ -109,7 +108,7 @@ TEST(General_Suite, GetDisabledFunctionalityState){
 TEST(General_Suite, GetFunctionalityStateBorkedModem){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CFUN?", 15000)).Times(1).WillOnce(Return("tamtam"));
-    auto method = dbusProxy->createMethodCall(GENERAL_DBUS_INTERFACE, "get_functionality_level");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"get_functionality_level"});
     auto response = dbusProxy->callMethod(method);
     std::string status, res;
     response >> status;
@@ -120,7 +119,7 @@ TEST(General_Suite, GetFunctionalityStateBorkedModem){
 
 TEST(General_Suite, SetFunctionalityStateBorkedModem){
     SETUP
-    auto method = dbusProxy->createMethodCall(GENERAL_DBUS_INTERFACE, "set_functionality_level");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"set_functionality_level"});
     EXPECT_CALL(modem, sendCommand("AT+CFUN=4", 15000)).Times(1).WillOnce(Return("\r\nsomethings not right\r\n\r\n"));
     method << "Disable";
     auto response = dbusProxy->callMethod(method);
@@ -134,7 +133,7 @@ TEST(General_Suite, SetFunctionalityStateBorkedModem){
 
 TEST(General_Suite, GetProductIdInfo){
     SETUP
-    auto method = dbusProxy->createMethodCall(GENERAL_DBUS_INTERFACE, "get_product_id_info");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"get_product_id_info"});
     EXPECT_CALL(modem, sendCommand("ATI", 300)).Times(1).WillOnce(Return("\r\ncoolio warmio\r\nRevision: 6587rd\r\n\r\nOK\r\n"));
     auto response = dbusProxy->callMethod(method);
     std::string res, object, revision;
@@ -148,7 +147,7 @@ TEST(General_Suite, GetProductIdInfo){
 
 TEST(General_Suite, GetProductIdInfoBorkedModem){
     SETUP
-    auto method = dbusProxy->createMethodCall(GENERAL_DBUS_INTERFACE, "get_product_id_info");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"get_product_id_info"});
     EXPECT_CALL(modem, sendCommand("ATI", 300)).Times(1).WillOnce(Return("\r\ncoolio warmio\r\nRevision: 6587rd\r\n\r\nBRUGGGA\r\n"));
     auto response = dbusProxy->callMethod(method);
     std::string res, object, revision;

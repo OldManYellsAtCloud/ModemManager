@@ -9,9 +9,8 @@ using ::testing::AtLeast;
 #define SETUP MockModem modem{}; \
               DbusManager dm{}; \
               NetworkService ns{&modem, &dm}; \
-              dm.finishRegistration(); \
               dm.signalCompletenessAndEnterEventLoopAsync(); \
-              auto dbusProxy = sdbus::createProxy(*dm.getConnection(), "org.gspine.modem", "/org/gspine/modem");
+              auto dbusProxy = sdbus::createProxy(*dm.getConnection(), sdbus::ServiceName{"org.gspine.modem"}, sdbus::ObjectPath{"/org/gspine/modem"});
 
 TEST(Ns_Suite, GetOperatorNameByDbusCall){
     SETUP
@@ -20,7 +19,7 @@ TEST(Ns_Suite, GetOperatorNameByDbusCall){
     // which calls the same method every 30 seconds.
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
     EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(0)).WillRepeatedly(Return("\r\n\r\n+CSQ: 99,99\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(NS_DBUS_INTERFACE, "get_operator");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_operator"});
     auto response = dbusProxy->callMethod(method);
 
     std::string operatorName, status;
@@ -40,15 +39,13 @@ TEST(Ns_Suite, GetOperatorNameByDbusSignal){
     EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+CSQ: 99,99\r\n\r\nOK\r\n"));
 
     NetworkService ns{&modem, &dm};
-    dm.finishRegistration();
     dm.signalCompletenessAndEnterEventLoopAsync();
 
     std::vector<sdbus::Signal> signals;
     auto dbusSignalHandler = [&](sdbus::Signal s){signals.push_back(s);};
-    auto dbusProxy = sdbus::createProxy(*dm.getConnection(), "org.gspine.modem", "/org/gspine/modem");
+    auto dbusProxy = sdbus::createProxy(*dm.getConnection(), sdbus::ServiceName{"org.gspine.modem"}, sdbus::ObjectPath{"/org/gspine/modem"});
 
-    dbusProxy->registerSignalHandler("org.gspine.modem", "signalQuality", dbusSignalHandler);
-    dbusProxy->finishRegistration();
+    dbusProxy->registerSignalHandler(sdbus::InterfaceName{"org.gspine.modem"}, sdbus::SignalName{"signalQuality"}, dbusSignalHandler);
 
     uint8_t sleep_counter = 0;
     while (signals.size() == 0 && sleep_counter++ < NETWORK_REPORT_SLEEP_TIMES * 2)
@@ -69,7 +66,7 @@ TEST(Ns_Suite, GetSignalQualityRssi0Ber0){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+CSQ: 0,0\r\n\r\nOK\r\n"));
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(NS_DBUS_INTERFACE, "get_signal_quality");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
     std::string status, rssi;
     double error_rate;
@@ -86,7 +83,7 @@ TEST(Ns_Suite, GetSignalQualityRssi1Ber1){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+CSQ: 1,1\r\n\r\nOK\r\n"));
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(NS_DBUS_INTERFACE, "get_signal_quality");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
     std::string status, rssi;
     double error_rate;
@@ -103,7 +100,7 @@ TEST(Ns_Suite, GetSignalQualityRssi5Ber2){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+CSQ: 5,2\r\n\r\nOK\r\n"));
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(NS_DBUS_INTERFACE, "get_signal_quality");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
     std::string status, rssi;
     double error_rate;
@@ -120,7 +117,7 @@ TEST(Ns_Suite, GetSignalQualityRssi31Ber3){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+CSQ: 31,3\r\n\r\nOK\r\n"));
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(NS_DBUS_INTERFACE, "get_signal_quality");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
     std::string status, rssi;
     double error_rate;
@@ -138,7 +135,7 @@ TEST(Ns_Suite, GetSignalQualityRssi99Ber4){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+CSQ: 99,4\r\n\r\nOK\r\n"));
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(NS_DBUS_INTERFACE, "get_signal_quality");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
     std::string status, rssi;
     double error_rate;
@@ -155,7 +152,7 @@ TEST(Ns_Suite, GetSignalQualityRssi99Ber5){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+CSQ: 99,5\r\n\r\nOK\r\n"));
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(NS_DBUS_INTERFACE, "get_signal_quality");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
     std::string status, rssi;
     double error_rate;
@@ -172,7 +169,7 @@ TEST(Ns_Suite, GetSignalQualityRssi99Ber6){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+CSQ: 99,6\r\n\r\nOK\r\n"));
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(NS_DBUS_INTERFACE, "get_signal_quality");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
     std::string status, rssi;
     double error_rate;
@@ -189,7 +186,7 @@ TEST(Ns_Suite, GetSignalQualityRssi99Ber7){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+CSQ: 99,7\r\n\r\nOK\r\n"));
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(NS_DBUS_INTERFACE, "get_signal_quality");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
     std::string status, rssi;
     double error_rate;
@@ -206,7 +203,7 @@ TEST(Ns_Suite, GetSignalQualityRssi99Ber99){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+CSQ: 99,99\r\n\r\nOK\r\n"));
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(NS_DBUS_INTERFACE, "get_signal_quality");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
     std::string status, rssi;
     double error_rate;
@@ -224,7 +221,7 @@ TEST(Ns_Suite, GetNetworkRegistrationStatus){
     EXPECT_CALL(modem, sendCommand("AT+CREG?", 300)).Times(1).WillOnce(Return("\r\n\r\n+CREG: 0,0\r\n\r\nOK\r\n"));
     EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(0)).WillRepeatedly(Return("\r\n\r\n+CSQ: 99,7\r\n\r\nOK\r\n"));
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(0)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(NS_DBUS_INTERFACE, "get_network_registration_status");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_network_registration_status"});
     auto response = dbusProxy->callMethod(method);
     std::string status, urc_status, reg_status, location, cell_id, access_tech;
     std::vector<std::string> regStatus;
@@ -241,7 +238,7 @@ TEST(Ns_Suite, GetNetworkRegistrationStatusError){
     EXPECT_CALL(modem, sendCommand("AT+CREG?", 300)).Times(1).WillOnce(Return("\r\n\r\n+CREG: 0,0\r\n\r\n+CME ERROR: 5\r\n"));
     EXPECT_CALL(modem, sendCommand("AT+CSQ", 300)).Times(AtLeast(0)).WillRepeatedly(Return("\r\n\r\n+CSQ: 99,7\r\n\r\nOK\r\n"));
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(0)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(NS_DBUS_INTERFACE, "get_network_registration_status");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_network_registration_status"});
     auto response = dbusProxy->callMethod(method);
     std::string status, urc_status, reg_status, location, cell_id, access_tech;
     std::vector<std::string> regStatus;

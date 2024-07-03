@@ -8,16 +8,15 @@
 #define SETUP MockModem modem{}; \
               DbusManager dm{}; \
               SimCard s{&modem, &dm}; \
-              dm.finishRegistration(); \
               dm.signalCompletenessAndEnterEventLoopAsync(); \
-              auto dbusProxy = sdbus::createProxy(*dm.getConnection(), "org.gspine.modem", "/org/gspine/modem");
+              auto dbusProxy = sdbus::createProxy(*dm.getConnection(), sdbus::ServiceName{"org.gspine.modem"}, sdbus::ObjectPath{"/org/gspine/modem"});
 
 using ::testing::Return;
 
 TEST(Sim_Suite, GetImsi){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CIMI", 300)).Times(1).WillOnce(Return("\r\n\r\n1234567890\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(SIM_DBUS_INTERFACE, "get_imsi");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_imsi"});
     auto response = dbusProxy->callMethod(method);
     std::string status, imsi;
     response >> status;
@@ -29,7 +28,7 @@ TEST(Sim_Suite, GetImsi){
 TEST(Sim_Suite, GetImsiError){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CIMI", 300)).Times(1).WillOnce(Return("\r\n\r\nnotgood\r\n\r\nERROR\r\n"));
-    auto method = dbusProxy->createMethodCall(SIM_DBUS_INTERFACE, "get_imsi");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_imsi"});
     auto response = dbusProxy->callMethod(method);
     std::string status, imsi;
     response >> status;
@@ -43,7 +42,7 @@ TEST(Sim_Suite, EnterPin){
     EXPECT_CALL(modem, sendCommandAndExpectResponse("AT+CPIN=1234", "PB DONE", 5000))
         .Times(1)
         .WillOnce(Return("\r\n\r\nPB DONE\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(SIM_DBUS_INTERFACE, "pin_enter");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"pin_enter"});
     method << "1234";
     auto response = dbusProxy->callMethod(method);
     std::string status, message;
@@ -58,7 +57,7 @@ TEST(Sim_Suite, EnterPinWrongPin){
     EXPECT_CALL(modem, sendCommandAndExpectResponse("AT+CPIN=1234", "PB DONE", 5000))
         .Times(1)
         .WillOnce(Return("\r\n\r\n+CME ERROR: 16\r\n"));
-    auto method = dbusProxy->createMethodCall(SIM_DBUS_INTERFACE, "pin_enter");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"pin_enter"});
     method << "1234";
     auto response = dbusProxy->callMethod(method);
     std::string status, message;
@@ -71,7 +70,7 @@ TEST(Sim_Suite, EnterPinWrongPin){
 TEST(Sim_Suite, GetPinState){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CPIN?", 300)).Times(1).WillOnce(Return("\r\n\r+CPIN: READY\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(SIM_DBUS_INTERFACE, "get_pin_state");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_pin_state"});
     auto response = dbusProxy->callMethod(method);
     std::string requestState, pinState;
     response >> requestState;
@@ -83,7 +82,7 @@ TEST(Sim_Suite, GetPinState){
 TEST(Sim_Suite, GetPinStateMultiWord){
     SETUP
         EXPECT_CALL(modem, sendCommand("AT+CPIN?", 300)).Times(1).WillOnce(Return("\r\n\r+CPIN: VERY READY\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(SIM_DBUS_INTERFACE, "get_pin_state");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_pin_state"});
     auto response = dbusProxy->callMethod(method);
     std::string requestState, pinState;
     response >> requestState;
@@ -95,7 +94,7 @@ TEST(Sim_Suite, GetPinStateMultiWord){
 TEST(Sim_Suite, GetPinStateError){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+CPIN?", 300)).Times(1).WillOnce(Return("\r\n\r\nERROR\r\n"));
-    auto method = dbusProxy->createMethodCall(SIM_DBUS_INTERFACE, "get_pin_state");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_pin_state"});
     auto response = dbusProxy->callMethod(method);
     std::string requestState, pinState;
     response >> requestState;
@@ -107,7 +106,7 @@ TEST(Sim_Suite, GetPinStateError){
 TEST(Sim_Suite, GetPinCounter_SC){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+QPINC=\"SC\"", 300)).Times(1).WillOnce(Return("\r\n\r\n+QPINC: \"SC\",3,10\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(SIM_DBUS_INTERFACE, "get_pin_counter");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_pin_counter"});
     method << "SC";
     auto response = dbusProxy->callMethod(method);
     std::string requestState;
@@ -123,7 +122,7 @@ TEST(Sim_Suite, GetPinCounter_SC){
 TEST(Sim_Suite, GetPinCounter_P2){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+QPINC=\"P2\"", 300)).Times(1).WillOnce(Return("\r\n\r\n+QPINC: \"P2\",2,7\r\n\r\nOK\r\n"));
-    auto method = dbusProxy->createMethodCall(SIM_DBUS_INTERFACE, "get_pin_counter");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_pin_counter"});
     method << "P2";
     auto response = dbusProxy->callMethod(method);
     std::string requestState;
@@ -139,7 +138,7 @@ TEST(Sim_Suite, GetPinCounter_P2){
 TEST(Sim_Suite, GetPinCounter_WrongType){
     SETUP
     EXPECT_CALL(modem, sendCommand("AT+QPINC=\"P3\"", 300)).Times(0);
-    auto method = dbusProxy->createMethodCall(SIM_DBUS_INTERFACE, "get_pin_counter");
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_pin_counter"});
     method << "P3";
     auto response = dbusProxy->callMethod(method);
     std::string requestState;
