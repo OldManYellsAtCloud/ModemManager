@@ -149,6 +149,10 @@ std::string NetworkService::getOperatorFromResponse(const std::string &response)
     // +COPS: 0,0,"Sunrise Sunrise",7
     // Extract the first word from the 3rd section
     std::vector<std::string> splitResponse = splitString(response, ",");
+    if (splitResponse.size() < 2){
+        ERROR("Could not extract operator from response: {}", response);
+        return "";
+    }
     std::vector<std::string> splitOperator = splitString(splitResponse[2], " ");
     operatorName = replaceSubstring(splitOperator[0], "\"", "");
     return operatorName;
