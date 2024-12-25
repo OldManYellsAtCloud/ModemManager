@@ -38,6 +38,7 @@ Methods:
 | org.gspine.modem.pd | enable_pd | b | sb | Enable/disable data connection. Output bool indicates success/failure. |
 | org.gspine.modem.pd | get_pd_state | n/a | sb | Get data connection state. If bool is true, it is enabled. Otherwise it is disabled. |
 | org.gspine.modem.pd | set_apn | s | sb | The input is APN string (e.g. `1,"IP","internet"` for my operator). The output is true, upon successful operation. |
+| org.gspine.modem.pd | get_connection_details | s | syysssss | The input is the APN name (e.g. "internet"). The output has a number of details :<br> byte1: cid<br>byte2: bearer_id<br>string3: APN name<br>string4: local IP address with mask<br>string5: gateway<br>string6: DNS1<br>string7: DNS2 |
 
 ### SIM
 

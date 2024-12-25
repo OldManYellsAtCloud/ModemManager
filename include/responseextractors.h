@@ -46,6 +46,7 @@ std::string replaceSubstring(std::string s, const std::string& sub1, const std::
 bool isError(const std::string& s);
 std::string getErrorMessage(const std::string& s);
 std::string extractSimpleState(const std::string& s);
+std::string findSubstringInVector(const std::vector<std::string> &haystack, const std::string needle);
 std::vector<std::string> splitString(std::string s, std::string delim);
 std::vector<std::string> flattenAndSplitString(std::string s, std::string delim);
 void quoteString(std::string& s);

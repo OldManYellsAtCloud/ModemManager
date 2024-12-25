@@ -108,3 +108,11 @@ void quoteString(std::string &s)
     if (s[s.length() - 1] != '"')
         s.append(1, '"');
 }
+
+std::string findSubstringInVector(const std::vector<std::string> &haystack, const std::string needle)
+{
+    for (const std::string &s: haystack){
+        if (s.find(needle) != std::string::npos) return s;
+    }
+    return "";
+}

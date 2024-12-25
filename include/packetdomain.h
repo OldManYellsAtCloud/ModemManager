@@ -8,6 +8,7 @@
 
 const std::string GATT_COMMAND = "AT+CGATT";
 const std::string CGDCONT_COMMAND = "AT+CGDCONT";
+const std::string CGCONTRDP_COMMAND = "AT+CGCONTRDP";
 
 class PacketDomain
 {
@@ -19,6 +20,7 @@ public:
     void enablePacketDomain(sdbus::MethodCall& call);
     void getPacketDomainState(sdbus::MethodCall& call);
     void setApnSettings(sdbus::MethodCall& call);
+    void getConnectionDetails(sdbus::MethodCall& call);
 };
 
 #endif // PACKETDOMAIN_H
