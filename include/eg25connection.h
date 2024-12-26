@@ -6,14 +6,7 @@
 #include <condition_variable>
 
 
-class eg25Connection: public ModemConnection
-#ifdef UI_ENABLED
-, public QObject
-#endif
-{
-#ifdef UI_ENABLED
-    Q_OBJECT
-#endif
+class eg25Connection: public ModemConnection {
     QSerialPort *serialPort;
     bool isModemAvailable = false;
 
