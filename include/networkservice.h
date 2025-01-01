@@ -4,20 +4,15 @@
 #include <thread>
 #include "modemconnection.h"
 #include "dbusmanager.h"
+#include "commandbase.h"
 
 #define NS_DBUS_INTERFACE  "org.gspine.modem.ns"
 #define NETWORK_REPORT_SLEEP_UNIT_MS  500
-#define NETWORK_REPORT_SLEEP_TIMES 30 * 2
+#define NETWORK_REPORT_SLEEP_TIMES 60
 
-const std::string COPS_COMMAND {"AT+COPS"};
-const std::string CSQ_COMMAND {"AT+CSQ"};
-const std::string CREG_COMMAND {"AT+CREG"};
-
-class NetworkService
+class NetworkService: public CommandBase
 {
 private:
-    ModemConnection* m_modem;
-    DbusManager* m_dbusManager;
     std::jthread periodicNetworkReport;
 
     static std::map<int, double> berDict;
@@ -44,13 +39,13 @@ private:
     std::string extractAccessTechnology(int i);
     std::string extractAccessTechnology(std::string s);
 
+protected:
+    void initParsers() override;
+    void initCmds() override;
+
 public:
     NetworkService(ModemConnection* modem, DbusManager* dbusManager);
     ~NetworkService();
-    void getOperator(sdbus::MethodCall& call);
-    void getSignalQuality(sdbus::MethodCall& call);
-    void getNetworkRegistrationStatus(sdbus::MethodCall& call);
-
 };
 
 #endif // NETWORKSERVICE_H

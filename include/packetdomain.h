@@ -3,24 +3,18 @@
 
 #include "modemconnection.h"
 #include "dbusmanager.h"
+#include "commandbase.h"
 
 #define PD_DBUS_INTERFACE  "org.gspine.modem.pd"
 
-const std::string GATT_COMMAND = "AT+CGATT";
-const std::string CGDCONT_COMMAND = "AT+CGDCONT";
-const std::string CGCONTRDP_COMMAND = "AT+CGCONTRDP";
-
-class PacketDomain
+class PacketDomain : public CommandBase
 {
-private:
-    ModemConnection* m_modem;
-    DbusManager* m_dbusManager;
+protected:
+    void initParsers() override;
+    void initCmds() override;
+
 public:
     PacketDomain(ModemConnection* modem, DbusManager* dbusManager);
-    void enablePacketDomain(sdbus::MethodCall& call);
-    void getPacketDomainState(sdbus::MethodCall& call);
-    void setApnSettings(sdbus::MethodCall& call);
-    void getConnectionDetails(sdbus::MethodCall& call);
 };
 
 #endif // PACKETDOMAIN_H

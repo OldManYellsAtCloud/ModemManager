@@ -159,10 +159,3 @@ std::string eg25Connection::readSerial(size_t timeout)
     return readOrWriteSerial(timeout);
 }
 
-#ifdef UI_ENABLED
-void eg25Connection::sendDebugCommand(std::string cmd)
-{
-    logModemData(cmd);
-    writeData(cmd);
-}
-#endif

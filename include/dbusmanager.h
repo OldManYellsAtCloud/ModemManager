@@ -26,7 +26,6 @@ public:
 
     template<class ... cnt>
     void sendSignal(std::string interface, std::string name, cnt&& ... content);
-    //void sendSignal(std::string interface, std::string name, std::string content);
 #ifdef TEST_ENABLED
     sdbus::IConnection* getConnection();
 #endif

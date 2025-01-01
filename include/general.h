@@ -5,12 +5,9 @@
 
 #include "modemconnection.h"
 #include "dbusmanager.h"
+#include "commandbase.h"
 
 #define GENERAL_DBUS_INTERFACE  "org.gspine.modem.general"
-
-
-const std::string CFUN_COMMAND = "AT+CFUN";
-const std::string ATI_COMMAND = "ATI";
 
 const std::map<std::string, std::string> FUNCTIONALITY_TO_VAL = {
     {"Min", "0"},
@@ -26,16 +23,14 @@ const std::map<std::string, std::string> VAL_TO_FUNCTIONALITY = {
     {"4", "Disabled"}
 };
 
-class General
+class General: public CommandBase
 {
-private:
-    ModemConnection* m_modem;
-    DbusManager* m_dbusManager;
+protected:
+    void initCmds() override;
+    void initParsers() override;
+
 public:
     General(ModemConnection* modem, DbusManager* dbusManager);
-    void setFunctionalityLevel(sdbus::MethodCall& call);
-    void getFunctionalityLevel(sdbus::MethodCall& call);
-    void getProductIdInfo(sdbus::MethodCall& call);
 };
 
 #endif // GENERAL_H

@@ -2,109 +2,85 @@
 #include "responseextractors.h"
 #include <loglibrary.h>
 
-PacketDomain::PacketDomain(ModemConnection* modem, DbusManager* dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
+void PacketDomain::initParsers()
 {
-    auto enablePackedDomainCallback = [this](sdbus::MethodCall call){this->enablePacketDomain(call);};
-    auto getPacketDomainStateCallback = [this](sdbus::MethodCall call){this->getPacketDomainState(call);};
-    auto setApnCallback = [this](sdbus::MethodCall call){this->setApnSettings(call);};
-    auto getConnectionDetailsCallback = [this](sdbus::MethodCall call){this->getConnectionDetails(call);};
-    m_dbusManager->registerMethod(PD_DBUS_INTERFACE, "enable_pd", "b", "sb", enablePackedDomainCallback);
-    m_dbusManager->registerMethod(PD_DBUS_INTERFACE, "get_pd_state", "", "sb", getPacketDomainStateCallback);
-    m_dbusManager->registerMethod(PD_DBUS_INTERFACE, "set_apn", "s", "sb", setApnCallback);
-    m_dbusManager->registerMethod(PD_DBUS_INTERFACE, "get_connection_details", "s", "syysssss", getConnectionDetailsCallback);
-}
+    auto successParser = [&](const std::string& s){
+        std::map<std::string, std::string> response;
+        response["success"] = "success";
+        return response;
+    };
 
-void PacketDomain::enablePacketDomain(sdbus::MethodCall &call)
-{
-    bool state;
-    call >> state;
-    LOG("Request to enable packet domain service: {}", state);
-    std::string cmd = GATT_COMMAND + "=";
-    cmd += state ? "1" : "0";
+    auto getPDStateParser = [&](const std::string& s){
+        std::map<std::string, std::string> response;
+        int res = extractNumericEnum(s);
+        response["state"] = (res > 0) ? "true" : "false";
+        return response;
+    };
 
-    std::string response = m_modem->sendCommand(cmd, 140 * 1000);
-    auto dbusResponse = call.createReply();
-    if (isResponseSuccess(response)){
-        dbusResponse << "OK";
-        dbusResponse << true;
-    } else {
-        dbusResponse << getErrorMessage(response);
-        dbusResponse << false;
-    }
-
-    dbusResponse.send();
-}
-
-void PacketDomain::getPacketDomainState(sdbus::MethodCall &call)
-{
-    LOG("Get packed domain service state");
-    std::string cmd = GATT_COMMAND + "?";
-    std::string response = m_modem->sendCommand(cmd, 140 * 1000);
-
-    auto dbusResponse = call.createReply();
-    if (isResponseSuccess(response)){
-        int res = extractNumericEnum(response);
-        dbusResponse << "OK";
-        dbusResponse << (res > 0);
-    } else {
-        dbusResponse << getErrorMessage(response);
-        dbusResponse << false;
-    }
-
-    dbusResponse.send();
-}
-
-void PacketDomain::setApnSettings(sdbus::MethodCall &call)
-{
-    std::string apnSettings;
-    call >> apnSettings;
-    LOG("Setting APN settings to: {}", apnSettings);
-    std::string cmd = CGDCONT_COMMAND + "=" + apnSettings;
-    std::string response = m_modem->sendCommand(cmd);
-    auto dbusResponse = call.createReply();
-    if (isResponseSuccess(response)){
-        dbusResponse << "OK";
-        dbusResponse << true;
-    } else {
-        dbusResponse << getErrorMessage(response);
-        dbusResponse << false;
-    }
-
-    dbusResponse.send();
-}
-
-void PacketDomain::getConnectionDetails(sdbus::MethodCall &call)
-{
-    LOG("Get connection details");
-    std::string apn;
-    call >> apn;
-
-    std::string cmd = CGCONTRDP_COMMAND;
-    std::string response = m_modem->sendCommand(cmd);
-    auto dbusResponse = call.createReply();
-
-    if (isResponseSuccess(response)){
-        std::vector<std::string> lines = flattenAndSplitString(response, " ");
-        std::string lineWithCorrectAPN = findSubstringInVector(lines, apn);
-
+    auto getConnectionDetailsParser = [&](const std::string& s){
+        std::map<std::string, std::string> response;
+        std::vector<std::string> lines = flattenAndSplitString(s, " ");
+        // FIXME: how to pass the correct APN name into the parser, without too much pain?
+        std::string lineWithCorrectAPN = findSubstringInVector(lines, "internet");
         if (lineWithCorrectAPN.empty()){
-            dbusResponse << "ERROR: Could not find requested APN: " + apn;
+            response["ERROR"] = "Count not find requested APN: internet";
         } else {
             std::vector<std::string> values = splitString(lineWithCorrectAPN, ",");
-            uint8_t cid = (uint8_t)std::stoi(values.at(0));
-            uint8_t bearer_id = (uint8_t)std::stoi(values.at(1));
-            std::string apn_from_response = values.at(2);
-            std::string address = values.at(3);
-            std::string gateway = values.at(4);
-            std::string dns1 = values.at(5);
-            std::string dns2 = values.at(6);
-            dbusResponse << "OK" << cid << bearer_id << apn << address << gateway << dns1 << dns2;
+            response["cid"] = values[0];
+            response["bearer_id"] = values[1];
+            response["apn"] = values[2];
+            response["ip_address"] = values[3];
+            response["gateway"] = values[4];
+            response["dns1"] = values[5];
+            response["dns2"] = values[6];
         }
+        return response;
+    };
 
-    } else {
-        dbusResponse << "ERROR: " + getErrorMessage(response);
-    }
-
-    dbusResponse.send();
+    parserDict["enable_pd"] = successParser;
+    parserDict["get_pd_state"] = getPDStateParser;
+    parserDict["set_apn"] = successParser;
+    parserDict["get_connection_details"] = getConnectionDetailsParser;
 }
 
+void PacketDomain::initCmds(){
+    cmdDict["enable_pd"] = "AT+CGATT=";
+    cmdDict["get_pd_state"] = "AT+CGATT?";
+    cmdDict["set_apn"] = "AT+CGDCONT=";
+    cmdDict["get_connection_details"] = "AT+CGCONTRDP";
+}
+
+PacketDomain::PacketDomain(ModemConnection* modem, DbusManager* dbusManager): CommandBase{modem, dbusManager}
+{
+    initParsers();
+    initCmds();
+
+    auto enablePackedDomainCallback = [this](sdbus::MethodCall call){
+        std::string memberName = call.getMemberName();
+        bool state;
+        call >> state;
+        std::string cmd = cmdDict[memberName];
+        cmd += state ? "1" : "0";
+        int timeout = 14 * 1000;
+        communicateWithModemAndSendResponse(call, cmd, timeout, parserDict[memberName]);
+    };
+
+    auto simpleCallback = [this](sdbus::MethodCall call){
+        std::string memberName = call.getMemberName();
+        std::string cmd = cmdDict[memberName];
+        communicateWithModemAndSendResponse(call, cmd, parserDict[memberName]);
+    };
+
+    auto setApnCallback = [this](sdbus::MethodCall call){
+        std::string memberName = call.getMemberName();
+        std::string apnSettings;
+        call >> apnSettings;
+        std::string cmd = cmdDict[memberName] + apnSettings;
+        communicateWithModemAndSendResponse(call, cmd, parserDict[memberName]);
+    };
+
+    m_dbusManager->registerMethod(PD_DBUS_INTERFACE, "enable_pd", "b", "s", enablePackedDomainCallback);
+    m_dbusManager->registerMethod(PD_DBUS_INTERFACE, "get_pd_state", "", "s", simpleCallback);
+    m_dbusManager->registerMethod(PD_DBUS_INTERFACE, "set_apn", "s", "s", setApnCallback);
+    m_dbusManager->registerMethod(PD_DBUS_INTERFACE, "get_connection_details", "s", "s", simpleCallback);
+}

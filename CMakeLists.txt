@@ -10,37 +10,38 @@ find_package(Qt6 REQUIRED COMPONENTS SerialPort)
 find_package(sdbus-c++ REQUIRED)
 find_package(SettingsLib)
 find_package(LogLibrary)
+find_package(nlohmann_json REQUIRED)
 
 set(SOURCES src/eg25connection.cpp
             src/simcard.cpp
             src/dbusmanager.cpp
-            src/hardware.cpp
             src/packetdomain.cpp
             src/general.cpp
-            src/responseextractors.cpp
+            src/hardware.cpp
             src/networkservice.cpp
-            src/urc.cpp)
+            src/responseextractors.cpp
+            src/urc.cpp
+            src/main.cpp
+            src/commandbase.cpp)
 
 set(HEADERS include/eg25connection.h
             include/simcard.h
             include/dbusmanager.h
-            include/hardware.h
             include/packetdomain.h
             include/general.h
             include/responseextractors.h
+            include/commandbase.h
             include/modemconnection.h
             include/networkservice.h
             include/urc.h
+            include/hardware.h
         )
 
-qt_add_executable(modemmanager src/main.cpp
-                               ${SOURCES}
-                               ${HEADERS}
-                               org.gspine.modem.conf)
-
-
-# include/commandlistmodel.h
-# src/commandlistmodel.cpp
+qt_add_executable(modemmanager
+                    ${SOURCES}
+                    ${HEADERS}
+                    org.gspine.modem.conf
+)
 
 target_include_directories(modemmanager PUBLIC include)
 
