@@ -3,20 +3,18 @@
 
 #include "modemconnection.h"
 #include "dbusmanager.h"
+#include "commandbase.h"
 
 #define HW_DBUS_INTERFACE  "org.gspine.modem.hw"
 
-const std::string SCLK_COMMAND = "AT+QSCLK";
-
-class Hardware
+class Hardware: public CommandBase
 {
-private:
-    ModemConnection* m_modem;
-    DbusManager* m_dbusManager;
+protected:
+    void initParsers() override;
+    void initCmds() override;
+
 public:
     Hardware(ModemConnection* modem, DbusManager* dbusManager);
-    void setLowPower(sdbus::MethodCall& call);
-    void getLowPower(sdbus::MethodCall& call);
 };
 
 #endif // HARDWARE_H

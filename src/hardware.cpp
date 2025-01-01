@@ -1,52 +1,51 @@
 #include "hardware.h"
-#include "responseextractors.h"
-
 #include <loglibrary.h>
 
-Hardware::Hardware(ModemConnection* modem, DbusManager* dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
-{
-    auto setLowPowerCallback = [this](sdbus::MethodCall call){this->setLowPower(call);};
-    auto getLowPowerCallback = [this](sdbus::MethodCall call){this->getLowPower(call);};
-    m_dbusManager->registerMethod(HW_DBUS_INTERFACE, "set_low_power", "b", "ss", setLowPowerCallback);
-    m_dbusManager->registerMethod(HW_DBUS_INTERFACE, "get_low_power", "", "sb", getLowPowerCallback);
+
+void Hardware::initParsers(){
+    auto setLPParser = [](const std::string& s){
+        std::map<std::string, std::string> response;
+        response["success"] = "success";
+        return response;
+    };
+
+    auto getLPParser = [](const std::string& s){
+        std::map<std::string, std::string> response;
+        int res = extractNumericEnum(s);
+        response["status"] = res > 0 ? "true" : "false";
+        return response;
+    };
+
+    parserDict["set_low_power"] = setLPParser;
+    parserDict["get_low_power"] = getLPParser;
 }
 
-void Hardware::setLowPower(sdbus::MethodCall &call)
-{
-    bool enable;
-    call >> enable;
-    LOG("Setting low power mode: {}", enable);
-    std::string cmd = SCLK_COMMAND + "=";
-    cmd += enable ? "1" : "0";
-
-    std::string response = m_modem->sendCommand(cmd);
-
-    auto dbusResponse = call.createReply();
-    if (isResponseSuccess(response)) {
-        dbusResponse << "OK";
-    } else {
-        dbusResponse << getErrorMessage(response);
-    }
-    dbusResponse << response;
-    dbusResponse.send();
+void Hardware::initCmds(){
+    cmdDict["set_low_power"] = "AT+QSCLK=";
+    cmdDict["get_low_power"] = "AT+QSCLK?";
 }
 
-void Hardware::getLowPower(sdbus::MethodCall &call)
+Hardware::Hardware(ModemConnection* modem, DbusManager* dbusManager): CommandBase{modem, dbusManager}
 {
-    LOG("Getting low power mode");
-    std::string cmd = SCLK_COMMAND + "?";
-    std::string response = m_modem->sendCommand(cmd);
+    initParsers();
+    initCmds();
 
-    auto dbusResponse = call.createReply();
+    auto setLPCallback = [&](sdbus::MethodCall call){
+        std::string memberName = call.getMemberName();
+        bool enable;
+        call >> enable;
+        std::string cmd = this->cmdDict[memberName];
+        cmd += enable ? "1" : "0";
+        communicateWithModemAndSendResponse(call, cmd, parserDict[memberName]);
+    };
 
-    if (isResponseSuccess(response)){
-        int res = extractNumericEnum(response);
-        dbusResponse << "OK";
-        dbusResponse << (res > 0);
-    } else {
-        dbusResponse << "ERROR: " + getErrorMessage(response);
-        dbusResponse << false;
-    }
+    auto getLPCallback = [&](sdbus::MethodCall call){
+        std::string memberName = call.getMemberName();
+        std::string cmd = this->cmdDict[memberName];
+        communicateWithModemAndSendResponse(call, cmd, parserDict[memberName]);
+    };
 
-    dbusResponse.send();
+    m_dbusManager->registerMethod(HW_DBUS_INTERFACE, "set_low_power", "b", "s", setLPCallback);
+    m_dbusManager->registerMethod(HW_DBUS_INTERFACE, "get_low_power", "", "s", getLPCallback);
 }
+

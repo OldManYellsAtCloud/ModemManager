@@ -2,86 +2,76 @@
 #include "responseextractors.h"
 #include <loglibrary.h>
 
-General::General(ModemConnection* modem, DbusManager* dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
+void General::initCmds()
 {
-    auto setFuntionalityLevelCallback = [this](sdbus::MethodCall call){this->setFunctionalityLevel(call);};
-    auto getFuntionalityLevelCallback = [this](sdbus::MethodCall call){this->getFunctionalityLevel(call);};
-    auto getProductIdInfoCallback = [this](sdbus::MethodCall call){this->getProductIdInfo(call);};
-    m_dbusManager->registerMethod(GENERAL_DBUS_INTERFACE, "set_functionality_level", "s", "sb", setFuntionalityLevelCallback);
-    m_dbusManager->registerMethod(GENERAL_DBUS_INTERFACE, "get_functionality_level", "", "ss", getFuntionalityLevelCallback);
-    m_dbusManager->registerMethod(GENERAL_DBUS_INTERFACE, "get_product_id_info", "", "sss", getProductIdInfoCallback);
+    cmdDict["get_functionality_level"] = "AT+CFUN?";
+    cmdDict["set_functionality_level"] = "AT+CFUN=";
+    cmdDict["get_product_id_info"] = "ATI";
 }
 
-void General::setFunctionalityLevel(sdbus::MethodCall &call)
+void General::initParsers()
 {
-    std::string func;
-    call >> func;
-    LOG("Setting functionality level to {}", func);
-    auto dbusResponse = call.createReply();
+    auto getFunctionalityLevelParser = [](const std::string& s){
+        std::map<std::string, std::string> response;
+        std::string state = extractNumericEnumAsString(s);
 
-    if (FUNCTIONALITY_TO_VAL.contains(func)) {
-        std::string cmd = CFUN_COMMAND + "=" + FUNCTIONALITY_TO_VAL.at(func);
-        std::string response = m_modem->sendCommand(cmd, 15 * 1000);
-        if (isResponseSuccess(response))
-            dbusResponse << "OK";
-        else
-            dbusResponse << getErrorMessage(response);
-
-        dbusResponse << isResponseSuccess(response);
-    } else {
-        dbusResponse << "ERROR: invalid functionality level requested.";
-        dbusResponse << false;
-    }
-
-    dbusResponse.send();
-}
-
-void General::getFunctionalityLevel(sdbus::MethodCall &call)
-{
-    std::string cmd = CFUN_COMMAND + "?";
-    std::string response = m_modem->sendCommand(cmd, 15 * 1000);
-    auto dbusResponse = call.createReply();
-
-    if (isResponseSuccess(response)){
-        std::string state = extractNumericEnumAsString(response);
-        if (!VAL_TO_FUNCTIONALITY.contains(state)){
-            dbusResponse << "ERROR: Can't parse state: " + state;
-            dbusResponse << response;
+        if (VAL_TO_FUNCTIONALITY.contains(state)){
+            response["functionality_level"] = VAL_TO_FUNCTIONALITY.at(state);
         } else {
-            dbusResponse << "OK";
-            dbusResponse << VAL_TO_FUNCTIONALITY.at(state);
+            response["ERROR"] = "Can't parse state: " + state;
         }
-    } else {
-        dbusResponse << getErrorMessage(response);
-        dbusResponse << response;
-    }
+        return response;
+    };
 
-    dbusResponse.send();
+    auto setFunctionalityLevelParser = [](const std::string& s){
+        std::map<std::string, std::string> response;
+        response["success"] = "success";
+        return response;
+    };
+
+    auto getProductInfoParser = [](const std::string& s){
+        std::map<std::string, std::string> response;
+        std::string flattenedMessage = flattenString(s);
+        size_t objectIdEnd = flattenedMessage.find("Revision");
+        size_t revisionStart = objectIdEnd + 10;
+        size_t revisionEnd = flattenedMessage.find(" ", revisionStart + 1);
+        response["objectId"] = flattenedMessage.substr(1, objectIdEnd - 2);
+        response["revision"] = flattenedMessage.substr(revisionStart, revisionEnd - revisionStart);
+        return response;
+    };
+
+    parserDict["get_functionality_level"] = getFunctionalityLevelParser;
+    parserDict["set_functionality_level"] = setFunctionalityLevelParser;
+    parserDict["get_product_id_info"] = getProductInfoParser;
 }
 
-void General::getProductIdInfo(sdbus::MethodCall &call)
+General::General(ModemConnection* modem, DbusManager* dbusManager): CommandBase{modem, dbusManager}
 {
-    LOG("Requesting product id info");
-    std::string response = m_modem->sendCommand(ATI_COMMAND);
-    auto dbusResponse = call.createReply();
+    initParsers();
+    initCmds();
 
-    if (isResponseSuccess(response)) {
-        response = flattenString(response);
-        size_t objectIdEnd = response.find("Revision");
-        size_t revisionStart = objectIdEnd + 10;
-        size_t revisionEnd = response.find(" ", revisionStart + 1);
-        std::string objectId = response.substr(1, objectIdEnd - 2);
-        std::string revision = response.substr(revisionStart, revisionEnd - revisionStart);
-        LOG("Object ID: {}, Revision: {}", objectId, revision);
+    auto getFunctionalityLevelCallback = [&](sdbus::MethodCall call){
+        std::string memberName = call.getMemberName();
+        std::string cmd = this->cmdDict[memberName];
+        int timeout = 15 * 1000;
+        communicateWithModemAndSendResponse(call, cmd, timeout, this->parserDict[memberName]);
+    };
 
-        dbusResponse << "OK";
-        dbusResponse << objectId;
-        dbusResponse << revision;
-    } else {
-        dbusResponse << "ERROR";
-        dbusResponse << getErrorMessage(response);
-        dbusResponse << response;
-    }
+    auto setFunctionalityLevelCallback = [&](sdbus::MethodCall call){
+        std::string memberName = call.getMemberName();
+        std::string functionality;
+        call >> functionality;
+        std::string cmd = this->cmdDict[memberName] + FUNCTIONALITY_TO_VAL.at(functionality);
+        int timeout = 15 * 1000;
+        communicateWithModemAndSendResponse(call, cmd, timeout, this->parserDict[memberName]);
+    };
 
-    dbusResponse.send();
+    auto getProductInfoCallback = [&](sdbus::MethodCall call){
+        std::string memberName = call.getMemberName();
+        communicateWithModemAndSendResponse(call, this->cmdDict[memberName], this->parserDict[memberName]);
+    };
+
+    m_dbusManager->registerMethod(GENERAL_DBUS_INTERFACE, "set_functionality_level", "s", "s", setFunctionalityLevelCallback);
+    m_dbusManager->registerMethod(GENERAL_DBUS_INTERFACE, "get_functionality_level", "", "s", getFunctionalityLevelCallback);
+    m_dbusManager->registerMethod(GENERAL_DBUS_INTERFACE, "get_product_id_info", "", "s", getProductInfoCallback);
 }

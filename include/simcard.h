@@ -3,21 +3,16 @@
 
 #include "modemconnection.h"
 #include "dbusmanager.h"
+#include "commandbase.h"
 
 #define SIM_DBUS_INTERFACE "org.gspine.modem.sim"
 
-const std::string CPIN_COMMAND = "AT+CPIN";
-const std::string CIMI_COMMAND = "AT+CIMI";
-const std::string PINC_COMMAND = "AT+QPINC";
-
-class SimCard
+class SimCard : public CommandBase
 {
-    ModemConnection* m_modem;
-    DbusManager* m_dbusManager;
-    void enterPin(sdbus::MethodCall& call);
-    void getImsi(sdbus::MethodCall& call);
-    void getPinState(sdbus::MethodCall& call);
-    void getPinRemainderCounter(sdbus::MethodCall& call);
+protected:
+    void initParsers() override;
+    void initCmds() override;
+
 public:
     SimCard(ModemConnection* modem, DbusManager* dbusManager);
 };

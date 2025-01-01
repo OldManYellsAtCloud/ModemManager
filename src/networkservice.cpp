@@ -28,15 +28,70 @@ std::map<int, std::string> NetworkService::accessTechDict {
     {4, "UTRAN/HSUPA"}, {5, "UTRAN/HSDPA/HSUPA"}, {6, "E-UTRAN"}
 };
 
-NetworkService::NetworkService(ModemConnection* modem, DbusManager* dbusManager): m_modem {modem}, m_dbusManager {dbusManager}
+void NetworkService::initParsers()
 {
-    auto getOperatorCallback = [this](sdbus::MethodCall call){this->getOperator(call);};
-    auto getSignalQualityCallback = [this](sdbus::MethodCall call){this->getSignalQuality(call);};
-    auto getNetworkRegistrationStatusCallback = [this](sdbus::MethodCall call){this->getNetworkRegistrationStatus(call);};
-    m_dbusManager->registerMethod(NS_DBUS_INTERFACE, "get_operator", "", "ss", getOperatorCallback);
-    m_dbusManager->registerMethod(NS_DBUS_INTERFACE, "get_signal_quality", "", "ssd", getSignalQualityCallback);
-    m_dbusManager->registerMethod(NS_DBUS_INTERFACE, "get_network_registration_status", "", "sas", getNetworkRegistrationStatusCallback);
-    m_dbusManager->registerSignal("org.gspine.modem", "signalQuality", "ss");
+    auto getOperatorParser = [&](const std::string& s){
+        std::map<std::string, std::string> response;
+        response["operatorName"] = getOperatorFromResponse(s);
+        return response;
+    };
+
+    auto getSignalQualityParser = [&](const std::string& s){
+        std::map<std::string, std::string> response;
+        std::string extractedS = extractSimpleState(s);
+        std::vector<std::string> splitValues = splitString(extractedS, ",");
+        response["rssi"] = extractRssi(splitValues[0]);
+        response["berPercentage"] = std::format("{}", extractBerAverage(splitValues[1]));
+        return response;
+    };
+
+    auto getNetworkRegistrationStatusParser = [&](const std::string& s){
+        std::map<std::string, std::string> response;
+        std::string extractedS = extractSimpleState(s);
+        std::vector<std::string> splitS = splitString(extractedS, ",");
+        response["urcState"] = extractNetworkUrcState(splitS[0]);
+        response["registrationState"] = extractRegistrationState(splitS[1]);
+
+        if (splitS.size() >= 4) {
+            response["areaCode"] = splitS[2];
+            response["cellId"] = splitS[3];
+        }
+
+        if (splitS.size() > 4)
+            response["accessTechnology"] = extractAccessTechnology(splitS[4]);
+
+        return response;
+    };
+
+    parserDict["get_operator"] = getOperatorParser;
+    parserDict["get_signal_quality"] = getSignalQualityParser;
+    parserDict["get_network_registration_status"] = getNetworkRegistrationStatusParser;
+}
+
+void NetworkService::initCmds(){
+    cmdDict["get_operator"] = "AT+COPS?";
+    cmdDict["get_signal_quality"] = "AT+CSQ";
+    cmdDict["get_network_registration_status"] = "AT+CREG?";
+}
+
+NetworkService::NetworkService(ModemConnection* modem, DbusManager* dbusManager): CommandBase{modem, dbusManager}
+{
+    initParsers();
+    initCmds();
+
+    // All commands have the same strusture, no extra input arguments,
+    // nor different timeout values. The same callback can be used for them
+    auto requestCallback = [&](sdbus::MethodCall call){
+        std::string memberName = call.getMemberName();
+        std::string cmd = this->cmdDict[memberName];
+        communicateWithModemAndSendResponse(call, cmd, this->parserDict[memberName]);
+    };
+
+    m_dbusManager->registerMethod(NS_DBUS_INTERFACE, "get_operator", "", "s", requestCallback);
+    m_dbusManager->registerMethod(NS_DBUS_INTERFACE, "get_signal_quality", "", "s", requestCallback);
+    m_dbusManager->registerMethod(NS_DBUS_INTERFACE, "get_network_registration_status", "", "s", requestCallback);
+
+    m_dbusManager->registerSignal("org.gspine.modem", "signalQuality", "s");
 
     periodicNetworkReport = std::jthread(&NetworkService::networkReportLoop, this);
 }
@@ -52,9 +107,8 @@ void NetworkService::networkReportLoop(std::stop_token stop_token)
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 
-    std::string operatorName;
-    std::string rssi;
-    uint8_t sleep_counter;
+    uint8_t sleep_counter;    
+    nlohmann::json json;
 
     while (!stop_token.stop_requested()){
         sleep_counter = 0;
@@ -63,21 +117,21 @@ void NetworkService::networkReportLoop(std::stop_token stop_token)
 
         std::string operatorResponse = getOperatorResponse();
         if (isResponseSuccess(operatorResponse)){
-            operatorName = getOperatorFromResponse(operatorResponse);
+            json["operatorName"] = getOperatorFromResponse(operatorResponse);
         } else {
-            operatorName = "N/A";
+            json["operatorName"] = "N/A";
         }
 
         std::string rssiResponse = getSignalQualityResponse();
         if (isResponseSuccess(rssiResponse)){
             std::vector<std::string> splitResponse = splitString(rssiResponse, " ");
             std::vector<std::string> splitValues = splitString(splitResponse[1], ",");
-            rssi = extractRssi(splitValues[0]);
+            json["rssi"] = extractRssi(splitValues[0]);
         } else {
-            rssi = "N/A";
+            json["rssi"] = "N/A";
         }
 
-        m_dbusManager->sendSignal("org.gspine.modem", "signalQuality", operatorName, rssi);
+        m_dbusManager->sendSignal("org.gspine.modem", "signalQuality", json.dump());
     }
 }
 
@@ -135,9 +189,11 @@ std::string NetworkService::extractAccessTechnology(std::string s)
     return "N/A";
 }
 
+
+
 std::string NetworkService::getOperatorResponse()
 {
-    const std::string cmd = COPS_COMMAND + "?";
+    const std::string cmd = cmdDict["get_operator"];
     std::string response = m_modem->sendCommand(cmd);
     return response;
 }
@@ -160,7 +216,7 @@ std::string NetworkService::getOperatorFromResponse(const std::string &response)
 
 std::string NetworkService::getSignalQualityResponse()
 {
-    const std::string cmd {CSQ_COMMAND};
+    const std::string cmd = cmdDict["get_signal_quality"];
     std::string response = m_modem->sendCommand(cmd);
     return response;
 }
@@ -201,51 +257,6 @@ std::string NetworkService::extractRssi(std::string s)
     return extractRssi(99);
 }
 
-void NetworkService::getOperator(sdbus::MethodCall &call)
-{
-    std::string response = getOperatorResponse();
-    auto dbusResponse = call.createReply();
-    std::string operatorName;
-    if (!isResponseSuccess(response)){
-        dbusResponse << "ERROR";
-        dbusResponse << response;
-    } else {
-        operatorName = getOperatorFromResponse(response);
-        dbusResponse << "OK";
-        dbusResponse << operatorName;
-    }
-
-    dbusResponse.send();
-}
-
-void NetworkService::getNetworkRegistrationStatus(sdbus::MethodCall &call)
-{
-    auto dbusResponse = call.createReply();
-    std::string cmd {CREG_COMMAND + "?"};
-    std::string response = m_modem->sendCommand(cmd);
-    std::vector<std::string> regStatus;
-
-    if (isResponseSuccess(response)){
-        response = extractSimpleState(response);
-        dbusResponse << "OK";
-        std::vector<std::string> splitResponse = splitString(response, ",");
-        regStatus.push_back(extractNetworkUrcState(splitResponse[0]));
-        regStatus.push_back(extractRegistrationState(splitResponse[1]));
-        if (splitResponse.size() >= 4) {
-            regStatus.push_back(splitResponse[2]);
-            regStatus.push_back(splitResponse[3]);
-        }
-
-        if (splitResponse.size() > 4)
-            regStatus.push_back(extractAccessTechnology(splitResponse[4]));
-    } else {
-        std::string message {"ERROR: " + getErrorMessage(response)};
-        dbusResponse << message;
-    }
-
-    dbusResponse << regStatus;
-    dbusResponse.send();
-}
 
 
 double NetworkService::extractBerAverage(int i)
@@ -266,24 +277,3 @@ double NetworkService::extractBerAverage(std::string s)
     }
     return extractBerAverage(99);
 }
-
-void NetworkService::getSignalQuality(sdbus::MethodCall &call)
-{
-    std::string response = getSignalQualityResponse();
-    auto dbusResponse = call.createReply();
-    if (!isResponseSuccess(response)){
-        dbusResponse << "ERROR";
-    } else {
-        std::vector<std::string> splitResponse = splitString(response, " ");
-        std::vector<std::string> splitValues = splitString(splitResponse[1], ",");
-        std::string rssi = extractRssi(splitValues[0]);
-        double berPercentage = extractBerAverage(splitValues[1]);
-        dbusResponse << "OK";
-        dbusResponse << rssi;
-        dbusResponse << berPercentage;
-    }
-    dbusResponse.send();
-}
-
-
-
