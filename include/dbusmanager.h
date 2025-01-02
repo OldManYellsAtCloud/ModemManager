@@ -19,7 +19,9 @@ public:
     void registerMethod(std::string interface, std::string name, std::string inputSignature,
                         std::string outputSignature, sdbus::method_callback callback);
     void signalCompletenessAndEnterEventLoop();
+#ifdef TEST_ENABLED
     void signalCompletenessAndEnterEventLoopAsync();
+#endif
     void finishRegistrationAndEnterLoop();
     bool hasEventLoopStarted();
     void sendReadySignal();

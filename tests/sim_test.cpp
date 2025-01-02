@@ -2,6 +2,7 @@
 #include "dbusmanager.h"
 #include "simcard.h"
 #include "gtest/gtest.h"
+#include "nlohmann/json.hpp"
 
 #include <loglibrary.h>
 
@@ -9,7 +10,8 @@
               DbusManager dm{}; \
               SimCard s{&modem, &dm}; \
               dm.signalCompletenessAndEnterEventLoopAsync(); \
-              auto dbusProxy = sdbus::createProxy(*dm.getConnection(), sdbus::ServiceName{"org.gspine.modem"}, sdbus::ObjectPath{"/org/gspine/modem"});
+              auto dbusProxy = sdbus::createProxy(sdbus::ServiceName{"org.gspine.modem"}, sdbus::ObjectPath{"/org/gspine/modem"}); \
+              nlohmann::json jsonResult;
 
 using ::testing::Return;
 
@@ -18,11 +20,11 @@ TEST(Sim_Suite, GetImsi){
     EXPECT_CALL(modem, sendCommand("AT+CIMI", 300)).Times(1).WillOnce(Return("\r\n\r\n1234567890\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_imsi"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, imsi;
-    response >> status;
-    response >> imsi;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("1234567890", imsi);
+    std::string res;
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["imsi"], "1234567890");
 }
 
 TEST(Sim_Suite, GetImsiError){
@@ -30,11 +32,11 @@ TEST(Sim_Suite, GetImsiError){
     EXPECT_CALL(modem, sendCommand("AT+CIMI", 300)).Times(1).WillOnce(Return("\r\n\r\nnotgood\r\n\r\nERROR\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_imsi"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, imsi;
-    response >> status;
-    response >> imsi;
-    EXPECT_EQ("Generic error", status);
-    EXPECT_EQ("\r\n\r\nnotgood\r\n\r\nERROR\r\n", imsi);
+    std::string res;
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["ERROR"], "Generic error; command: AT+CIMI");
 }
 
 TEST(Sim_Suite, EnterPin){
@@ -45,11 +47,11 @@ TEST(Sim_Suite, EnterPin){
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"pin_enter"});
     method << "1234";
     auto response = dbusProxy->callMethod(method);
-    std::string status, message;
-    response >> status;
-    response >> message;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("\r\n\r\nPB DONE\r\n\r\nOK\r\n", message);
+    std::string res;
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["success"], "success");
 }
 
 TEST(Sim_Suite, EnterPinWrongPin){
@@ -60,11 +62,11 @@ TEST(Sim_Suite, EnterPinWrongPin){
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"pin_enter"});
     method << "1234";
     auto response = dbusProxy->callMethod(method);
-    std::string status, message;
-    response >> status;
-    response >> message;
-    EXPECT_EQ("Incorrect password", status);
-    EXPECT_EQ("\r\n\r\n+CME ERROR: 16\r\n", message);
+    std::string res;
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["ERROR"], "Incorrect password; command: AT+CPIN=1234");
 }
 
 TEST(Sim_Suite, GetPinState){
@@ -72,23 +74,23 @@ TEST(Sim_Suite, GetPinState){
     EXPECT_CALL(modem, sendCommand("AT+CPIN?", 300)).Times(1).WillOnce(Return("\r\n\r+CPIN: READY\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_pin_state"});
     auto response = dbusProxy->callMethod(method);
-    std::string requestState, pinState;
-    response >> requestState;
-    response >> pinState;
-    EXPECT_EQ("OK", requestState);
-    EXPECT_EQ("READY", pinState);
+    std::string res;
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["state"], "READY");
 }
 
 TEST(Sim_Suite, GetPinStateMultiWord){
     SETUP
-        EXPECT_CALL(modem, sendCommand("AT+CPIN?", 300)).Times(1).WillOnce(Return("\r\n\r+CPIN: VERY READY\r\n\r\nOK\r\n"));
+    EXPECT_CALL(modem, sendCommand("AT+CPIN?", 300)).Times(1).WillOnce(Return("\r\n\r+CPIN: VERY READY\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_pin_state"});
     auto response = dbusProxy->callMethod(method);
-    std::string requestState, pinState;
-    response >> requestState;
-    response >> pinState;
-    EXPECT_EQ("OK", requestState);
-    EXPECT_EQ("VERY READY", pinState);
+    std::string res;
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["state"], "VERY READY");
 }
 
 TEST(Sim_Suite, GetPinStateError){
@@ -96,11 +98,11 @@ TEST(Sim_Suite, GetPinStateError){
     EXPECT_CALL(modem, sendCommand("AT+CPIN?", 300)).Times(1).WillOnce(Return("\r\n\r\nERROR\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_pin_state"});
     auto response = dbusProxy->callMethod(method);
-    std::string requestState, pinState;
-    response >> requestState;
-    response >> pinState;
-    EXPECT_EQ("Generic error", requestState);
-    EXPECT_EQ("\r\n\r\nERROR\r\n", pinState);
+    std::string res;
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["ERROR"], "Generic error; command: AT+CPIN?");
 }
 
 TEST(Sim_Suite, GetPinCounter_SC){
@@ -109,14 +111,12 @@ TEST(Sim_Suite, GetPinCounter_SC){
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_pin_counter"});
     method << "SC";
     auto response = dbusProxy->callMethod(method);
-    std::string requestState;
-    int pinCounter, pukCounter;
-    response >> requestState;
-    response >> pinCounter;
-    response >> pukCounter;
-    EXPECT_EQ("OK", requestState);
-    EXPECT_EQ(3, pinCounter);
-    EXPECT_EQ(10, pukCounter);
+    std::string res;
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["pin_counter"], "3");
+    EXPECT_EQ(jsonResult["puk_counter"], "10");
 }
 
 TEST(Sim_Suite, GetPinCounter_P2){
@@ -125,28 +125,23 @@ TEST(Sim_Suite, GetPinCounter_P2){
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_pin_counter"});
     method << "P2";
     auto response = dbusProxy->callMethod(method);
-    std::string requestState;
-    int pinCounter, pukCounter;
-    response >> requestState;
-    response >> pinCounter;
-    response >> pukCounter;
-    EXPECT_EQ("OK", requestState);
-    EXPECT_EQ(2, pinCounter);
-    EXPECT_EQ(7, pukCounter);
+    std::string res;
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["pin_counter"], "2");
+    EXPECT_EQ(jsonResult["puk_counter"], "7");
 }
 
 TEST(Sim_Suite, GetPinCounter_WrongType){
     SETUP
-    EXPECT_CALL(modem, sendCommand("AT+QPINC=\"P3\"", 300)).Times(0);
+        EXPECT_CALL(modem, sendCommand("AT+QPINC=\"P3\"", 300)).Times(1).WillOnce(Return("\r\n\r\nERROR\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{SIM_DBUS_INTERFACE}, sdbus::MethodName{"get_pin_counter"});
     method << "P3";
     auto response = dbusProxy->callMethod(method);
-    std::string requestState;
-    int pinCounter, pukCounter;
-    response >> requestState;
-    response >> pinCounter;
-    response >> pukCounter;
-    EXPECT_EQ("Error: invalid pin counter requested: \"P3\"", requestState);
-    EXPECT_EQ(0, pinCounter);
-    EXPECT_EQ(0, pukCounter);
+    std::string res;
+
+    response >> res;
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["ERROR"], "Generic error; command: AT+QPINC=\"P3\"");
 }

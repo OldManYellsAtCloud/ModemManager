@@ -2,6 +2,7 @@
 #include "dbusmanager.h"
 #include "general.h"
 #include "gtest/gtest.h"
+#include "nlohmann/json.hpp"
 
 #include <loglibrary.h>
 
@@ -9,22 +10,22 @@
               DbusManager dm{}; \
               General g{&modem, &dm}; \
               dm.signalCompletenessAndEnterEventLoopAsync(); \
-              auto dbusProxy = sdbus::createProxy(*dm.getConnection(), sdbus::ServiceName{"org.gspine.modem"}, sdbus::ObjectPath{"/org/gspine/modem"});
+              auto dbusProxy = sdbus::createProxy(sdbus::ServiceName{"org.gspine.modem"}, sdbus::ObjectPath{"/org/gspine/modem"}); \
+              nlohmann::json jsonResponse;
 
 using ::testing::Return;
 
 TEST(General_Suite, SetFullFunctionality){
     SETUP
-        auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"set_functionality_level"});
+    auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"set_functionality_level"});
     EXPECT_CALL(modem, sendCommand("AT+CFUN=1", 15000)).Times(1).WillOnce(Return("\r\n\r\nOK"));
     method << "Full";
     auto response = dbusProxy->callMethod(method);
     std::string res;
-    bool status;
     response >> res;
-    response >> status;
-    EXPECT_EQ(res, "OK");
-    EXPECT_TRUE(status);
+
+    jsonResponse = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResponse["success"], "success");
 }
 
 TEST(General_Suite, SetMinFunctionality){
@@ -34,11 +35,10 @@ TEST(General_Suite, SetMinFunctionality){
     method << "Min";
     auto response = dbusProxy->callMethod(method);
     std::string res;
-    bool status;
     response >> res;
-    response >> status;
-    EXPECT_EQ(res, "OK");
-    EXPECT_TRUE(status);
+
+    jsonResponse = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResponse["success"], "success");
 }
 
 TEST(General_Suite, SetDisable){
@@ -48,11 +48,10 @@ TEST(General_Suite, SetDisable){
     method << "Disable";
     auto response = dbusProxy->callMethod(method);
     std::string res;
-    bool status;
     response >> res;
-    response >> status;
-    EXPECT_EQ(res, "OK");
-    EXPECT_TRUE(status);
+
+    jsonResponse = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResponse["success"], "success");
 }
 
 TEST(General_Suite, SetNonExistingFunctionalityLevel){
@@ -61,11 +60,10 @@ TEST(General_Suite, SetNonExistingFunctionalityLevel){
     method << "non_existing";
     auto response = dbusProxy->callMethod(method);
     std::string res;
-    bool status;
     response >> res;
-    response >> status;
-    EXPECT_EQ(res, "ERROR: invalid functionality level requested.");
-    EXPECT_FALSE(status);
+
+    jsonResponse = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResponse["ERROR"], "Unknown error: ; command: AT+CFUN=-1");
 }
 
 
@@ -74,11 +72,11 @@ TEST(General_Suite, GetFullFunctionalityState){
     EXPECT_CALL(modem, sendCommand("AT+CFUN?", 15000)).Times(1).WillOnce(Return("\r\n+CFUN: 1\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"get_functionality_level"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, res;
-    response >> status;
+    std::string res;
     response >> res;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("Full", res);
+
+    jsonResponse = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResponse["functionality_level"], "Full");
 }
 
 TEST(General_Suite, GetMinFunctionalityState){
@@ -86,11 +84,10 @@ TEST(General_Suite, GetMinFunctionalityState){
     EXPECT_CALL(modem, sendCommand("AT+CFUN?", 15000)).Times(1).WillOnce(Return("\r\n+CFUN: 0\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"get_functionality_level"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, res;
-    response >> status;
+    std::string res;
     response >> res;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("Minimum", res);
+    jsonResponse = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResponse["functionality_level"], "Minimum");
 }
 
 TEST(General_Suite, GetDisabledFunctionalityState){
@@ -98,11 +95,11 @@ TEST(General_Suite, GetDisabledFunctionalityState){
     EXPECT_CALL(modem, sendCommand("AT+CFUN?", 15000)).Times(1).WillOnce(Return("\r\n+CFUN: 4\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"get_functionality_level"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, res;
-    response >> status;
+    std::string res;
     response >> res;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("Disabled", res);
+
+    jsonResponse = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResponse["functionality_level"], "Disabled");
 }
 
 TEST(General_Suite, GetFunctionalityStateBorkedModem){
@@ -110,11 +107,11 @@ TEST(General_Suite, GetFunctionalityStateBorkedModem){
     EXPECT_CALL(modem, sendCommand("AT+CFUN?", 15000)).Times(1).WillOnce(Return("tamtam"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"get_functionality_level"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, res;
-    response >> status;
+    std::string res;
     response >> res;
-    EXPECT_EQ("Unknown error: tamtam", status);
-    EXPECT_EQ("tamtam", res);
+
+    jsonResponse = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResponse["ERROR"], "Unknown error: tamtam; command: AT+CFUN?");
 }
 
 TEST(General_Suite, SetFunctionalityStateBorkedModem){
@@ -124,11 +121,10 @@ TEST(General_Suite, SetFunctionalityStateBorkedModem){
     method << "Disable";
     auto response = dbusProxy->callMethod(method);
     std::string res;
-    bool state;
     response >> res;
-    response >> state;
-    EXPECT_EQ(res, "Unknown error: \r\nsomethings not right\r\n\r\n");
-    EXPECT_FALSE(state);
+
+    jsonResponse = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResponse["ERROR"], "Unknown error: \r\nsomethings not right\r\n\r\n; command: AT+CFUN=4");
 }
 
 TEST(General_Suite, GetProductIdInfo){
@@ -136,13 +132,12 @@ TEST(General_Suite, GetProductIdInfo){
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"get_product_id_info"});
     EXPECT_CALL(modem, sendCommand("ATI", 300)).Times(1).WillOnce(Return("\r\ncoolio warmio\r\nRevision: 6587rd\r\n\r\nOK\r\n"));
     auto response = dbusProxy->callMethod(method);
-    std::string res, object, revision;
+    std::string res;
     response >> res;
-    response >> object;
-    response >> revision;
-    EXPECT_EQ("OK", res);
-    EXPECT_EQ("coolio warmio", object);
-    EXPECT_EQ("6587rd", revision);
+
+    jsonResponse = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResponse["objectId"], "coolio warmio");
+    EXPECT_EQ(jsonResponse["revision"], "6587rd");
 }
 
 TEST(General_Suite, GetProductIdInfoBorkedModem){
@@ -150,11 +145,9 @@ TEST(General_Suite, GetProductIdInfoBorkedModem){
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{GENERAL_DBUS_INTERFACE}, sdbus::MethodName{"get_product_id_info"});
     EXPECT_CALL(modem, sendCommand("ATI", 300)).Times(1).WillOnce(Return("\r\ncoolio warmio\r\nRevision: 6587rd\r\n\r\nBRUGGGA\r\n"));
     auto response = dbusProxy->callMethod(method);
-    std::string res, object, revision;
+    std::string res;
     response >> res;
-    response >> object;
-    response >> revision;
-    EXPECT_EQ("ERROR", res);
-    EXPECT_EQ("Unknown error: \r\ncoolio warmio\r\nRevision: 6587rd\r\n\r\nBRUGGGA\r\n", object);
-    EXPECT_EQ("\r\ncoolio warmio\r\nRevision: 6587rd\r\n\r\nBRUGGGA\r\n", revision);
+
+    jsonResponse = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResponse["ERROR"], "Unknown error: \r\ncoolio warmio\r\nRevision: 6587rd\r\n\r\nBRUGGGA\r\n; command: ATI");
 }

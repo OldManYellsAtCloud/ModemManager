@@ -35,6 +35,7 @@ void DbusManager::signalCompletenessAndEnterEventLoop()
     dbusConnection->enterEventLoop();
 }
 
+#ifdef TEST_ENABLED
 void DbusManager::signalCompletenessAndEnterEventLoopAsync()
 {
     LOG("Entering dbus event loop async");
@@ -43,6 +44,7 @@ void DbusManager::signalCompletenessAndEnterEventLoopAsync()
     dbusConnection->enterEventLoopAsync();
     t.join();
 }
+#endif
 
 void DbusManager::finishRegistrationAndEnterLoop()
 {

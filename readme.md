@@ -43,16 +43,18 @@ Methods:
 
 Methods:
 
-| interface |  method name | input signature | output signature | comments |
-| --------- | ------------ | --------------- | ---------------- | -------- |
-| org.gspine.modem.sim | pin_enter | s | ss | Input is the PIN code for the SIM. Second string contains the raw response from the modem. |
-| org.gspine.modem.sim | get_imsi | n/a | ss | Second string contains the IMSI code for the SIM card. |
-| org.gspine.modem.sim | get_pin_state | n/a | ss | Second string contains the current state of the SIM card: pin required, puk required, ready... |
-| org.gspine.modem.sim | get_pin_counter | s | sii | Input is either `SC` (for SIM PIN) or `P2` (for PIN2). The returned first int is the remaining PIN counter, the second one is the remaining PUK counter). |
+| interface |  method name | input signature | output signature | response | comments |
+| --------- | ------------ | --------------- | ---------------- | -------- | -------- |
+| org.gspine.modem.sim | pin_enter | s | s | `{"success": "success"}` | Input is the PIN code for the SIM. |
+| org.gspine.modem.sim | get_imsi | n/a | s | `{"imsi": "123456789"}` | Sim card IMSI number |
+| org.gspine.modem.sim | get_pin_state | n/a | s | `{"state": "READY"}` | The current state of the SIM card: pin required, puk required, ready... |
+| org.gspine.modem.sim | get_pin_counter | s | s | `{"pin_counter": "3", "puk_counter": "8"}` | Input is either `SC` (for SIM PIN) or `P2` (for PIN2). Returns remaining pin- and puk-enter counters |
 
 ### URC
 
-Unsolicited return code
+Unsolicited return code.
+
+Note: the content is the raw message from the modem, and not formatted as JSON.
 
 Signals:
 
@@ -67,8 +69,8 @@ Methods:
 | interface |  method name | input signature | output signature | response | comments |
 | --------- | ------------ | --------------- | ---------------- | -------- | -------- |
 | org.gspine.modem.ns | get_operator | n/a | s | `{"operatorName":"Sunrise"}` | Name of currently registered network operator. |
-| org.gspine.modem.ns | get_signal_quality | n/a | s |  | Returns two values. The first is the RSSI (as dBm, string), and the other one is the bit error rate, as a percentage (between 0 and 1). |
-| org.gspine.modem.ns | get_network_registration_status | n/a | s | Returns an array of strings, maximum 5 elements. First element indicates if an URC is sent upon registration (disabled, enabled, enabled_with_location). The second indicates the current registration status (not_registered, registered_home, not_registered_searching, registration_denied, unknown, registered_roaming). The 3rd contains location area code, and the 4th is the cell id. The 5th indicates the currently used access technology. Elements 3-5 are optional, and might not be present. |
+| org.gspine.modem.ns | get_signal_quality | n/a | s | `{"rssi": ">= 113 dBm", "berPercentage": "0.28"}` | RSSI as dBm, string, and bit error rate, as a percentage (between 0 and 100). |
+| org.gspine.modem.ns | get_network_registration_status | n/a | s | `{"urcState": "enabled", "registrationState": "registered_roaming", "areaCode": "D509", "cellId": "80D413D", "accessTechnology": ""}` | urcState indicates if an URC is sent upon registration (disabled, enabled, enabled_with_location). registrationState indicates the current registration status (not_registered, registered_home, not_registered_searching, registration_denied, unknown, registered_roaming). The 3rd contains location area code (2 hex number), and the 4th is the cell id (16 or 28 bit hex number). The 5th indicates the currently used access technology (GSM, UTRAN, GSM/EGPRS, UTRAN/HSPDA, UTRAN/HSUPA, UTRAN/HSDPA/HSUPA, E-UTRAN). Only urcState and registrationState and present always, the other elements might be missing. |
 
 Signals:
 

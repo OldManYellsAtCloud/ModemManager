@@ -21,7 +21,6 @@ set(SOURCES src/eg25connection.cpp
             src/networkservice.cpp
             src/responseextractors.cpp
             src/urc.cpp
-            src/main.cpp
             src/commandbase.cpp)
 
 set(HEADERS include/eg25connection.h
@@ -41,6 +40,7 @@ qt_add_executable(modemmanager
                     ${SOURCES}
                     ${HEADERS}
                     org.gspine.modem.conf
+                    src/main.cpp
 )
 
 target_include_directories(modemmanager PUBLIC include)
