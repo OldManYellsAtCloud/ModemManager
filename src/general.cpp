@@ -59,9 +59,13 @@ General::General(ModemConnection* modem, DbusManager* dbusManager): CommandBase{
 
     auto setFunctionalityLevelCallback = [&](sdbus::MethodCall call){
         std::string memberName = call.getMemberName();
+        std::string cmd = this->cmdDict[memberName];
         std::string functionality;
         call >> functionality;
-        std::string cmd = this->cmdDict[memberName] + FUNCTIONALITY_TO_VAL.at(functionality);
+        if (FUNCTIONALITY_TO_VAL.contains(functionality))
+            cmd += FUNCTIONALITY_TO_VAL.at(functionality);
+        else
+            cmd += FUNCTIONALITY_TO_VAL.at("Invalid");
         int timeout = 15 * 1000;
         communicateWithModemAndSendResponse(call, cmd, timeout, this->parserDict[memberName]);
     };

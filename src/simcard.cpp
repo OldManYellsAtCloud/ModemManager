@@ -30,6 +30,7 @@ SimCard::SimCard(ModemConnection* modem, DbusManager* dbusManager): CommandBase{
         std::string memberName = call.getMemberName();
         std::string type;
         call >> type;
+        quoteString(type);
         std::string cmd = cmdDict[memberName];
         cmd += type;
         communicateWithModemAndSendResponse(call, cmd, parserDict[memberName]);

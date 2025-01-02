@@ -2,6 +2,7 @@
 #include "dbusmanager.h"
 #include "networkservice.h"
 #include "gtest/gtest.h"
+#include "nlohmann/json.hpp"
 
 using ::testing::Return;
 using ::testing::AtLeast;
@@ -10,7 +11,8 @@ using ::testing::AtLeast;
               DbusManager dm{}; \
               NetworkService ns{&modem, &dm}; \
               dm.signalCompletenessAndEnterEventLoopAsync(); \
-              auto dbusProxy = sdbus::createProxy(*dm.getConnection(), sdbus::ServiceName{"org.gspine.modem"}, sdbus::ObjectPath{"/org/gspine/modem"});
+              auto dbusProxy = sdbus::createProxy(sdbus::ServiceName{"org.gspine.modem"}, sdbus::ObjectPath{"/org/gspine/modem"}); \
+              nlohmann::json jsonResult;
 
 TEST(Ns_Suite, GetOperatorNameByDbusCall){
     SETUP
@@ -22,11 +24,11 @@ TEST(Ns_Suite, GetOperatorNameByDbusCall){
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_operator"});
     auto response = dbusProxy->callMethod(method);
 
-    std::string operatorName, status;
-    response >> status;
-    response >> operatorName;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("Sunrise", operatorName);
+    std::string res;
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["operatorName"], "Sunrise");
 }
 
 TEST(Ns_Suite, GetOperatorNameByDbusSignal){
@@ -54,12 +56,12 @@ TEST(Ns_Suite, GetOperatorNameByDbusSignal){
     EXPECT_LT(sleep_counter, NETWORK_REPORT_SLEEP_TIMES * 2 ) << "Timeout without getting any signal quality reports!";
     EXPECT_GE(signals.size(), 1) << "No signal quality reports have arrived!";
 
-    std::string operatorName, rssi;
-    signals[0] >> operatorName;
-    signals[0] >> rssi;
+    std::string res;
+    signals[0] >> res;
 
-    EXPECT_EQ("Sunrise", operatorName);
-    EXPECT_EQ("N/A", rssi);
+    nlohmann::json jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["operatorName"], "Sunrise");
+    EXPECT_EQ(jsonResult["rssi"], "N/A");
 }
 
 TEST(Ns_Suite, GetSignalQualityRssi0Ber0){
@@ -68,15 +70,13 @@ TEST(Ns_Suite, GetSignalQualityRssi0Ber0){
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, rssi;
-    double error_rate;
+    std::string res;
 
-    response >> status;
-    response >> rssi;
-    response >> error_rate;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("<= -113 dBm", rssi);
-    EXPECT_EQ(0.14, error_rate);
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["rssi"], "<= -113 dBm");
+    EXPECT_EQ(jsonResult["berPercentage"], "0.14");
 }
 
 TEST(Ns_Suite, GetSignalQualityRssi1Ber1){
@@ -85,15 +85,12 @@ TEST(Ns_Suite, GetSignalQualityRssi1Ber1){
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, rssi;
-    double error_rate;
+    std::string res;
+    response >> res;
 
-    response >> status;
-    response >> rssi;
-    response >> error_rate;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("-111 dBm", rssi);
-    EXPECT_EQ(0.28, error_rate);
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["rssi"], "-111 dBm");
+    EXPECT_EQ(jsonResult["berPercentage"], "0.28");
 }
 
 TEST(Ns_Suite, GetSignalQualityRssi5Ber2){
@@ -102,15 +99,12 @@ TEST(Ns_Suite, GetSignalQualityRssi5Ber2){
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, rssi;
-    double error_rate;
+    std::string res;
+    response >> res;
 
-    response >> status;
-    response >> rssi;
-    response >> error_rate;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("-103 dBm", rssi);
-    EXPECT_EQ(0.57, error_rate);
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["rssi"], "-103 dBm");
+    EXPECT_EQ(jsonResult["berPercentage"], "0.57");
 }
 
 TEST(Ns_Suite, GetSignalQualityRssi31Ber3){
@@ -119,15 +113,13 @@ TEST(Ns_Suite, GetSignalQualityRssi31Ber3){
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, rssi;
-    double error_rate;
+    std::string res;
 
-    response >> status;
-    response >> rssi;
-    response >> error_rate;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ(">= -51 dBm", rssi);
-    EXPECT_EQ(1.13, error_rate);
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["rssi"], ">= -51 dBm");
+    EXPECT_EQ(jsonResult["berPercentage"], "1.13");
 }
 
 
@@ -137,15 +129,13 @@ TEST(Ns_Suite, GetSignalQualityRssi99Ber4){
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, rssi;
-    double error_rate;
+    std::string res;
 
-    response >> status;
-    response >> rssi;
-    response >> error_rate;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("N/A", rssi);
-    EXPECT_EQ(2.26, error_rate);
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["rssi"], "N/A");
+    EXPECT_EQ(jsonResult["berPercentage"], "2.26");
 }
 
 TEST(Ns_Suite, GetSignalQualityRssi99Ber5){
@@ -154,15 +144,12 @@ TEST(Ns_Suite, GetSignalQualityRssi99Ber5){
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, rssi;
-    double error_rate;
+    std::string res;
 
-    response >> status;
-    response >> rssi;
-    response >> error_rate;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("N/A", rssi);
-    EXPECT_EQ(4.53, error_rate);
+    response >> res;
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["rssi"], "N/A");
+    EXPECT_EQ(jsonResult["berPercentage"], "4.53");
 }
 
 TEST(Ns_Suite, GetSignalQualityRssi99Ber6){
@@ -171,15 +158,12 @@ TEST(Ns_Suite, GetSignalQualityRssi99Ber6){
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, rssi;
-    double error_rate;
+    std::string res;
+    response >> res;
 
-    response >> status;
-    response >> rssi;
-    response >> error_rate;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("N/A", rssi);
-    EXPECT_EQ(9.05, error_rate);
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["rssi"], "N/A");
+    EXPECT_EQ(jsonResult["berPercentage"], "9.05");
 }
 
 TEST(Ns_Suite, GetSignalQualityRssi99Ber7){
@@ -188,15 +172,12 @@ TEST(Ns_Suite, GetSignalQualityRssi99Ber7){
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, rssi;
-    double error_rate;
+    std::string res;
+    response >> res;
 
-    response >> status;
-    response >> rssi;
-    response >> error_rate;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("N/A", rssi);
-    EXPECT_EQ(18.1, error_rate);
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["rssi"], "N/A");
+    EXPECT_EQ(jsonResult["berPercentage"], "18.1");
 }
 
 TEST(Ns_Suite, GetSignalQualityRssi99Ber99){
@@ -205,15 +186,12 @@ TEST(Ns_Suite, GetSignalQualityRssi99Ber99){
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(1)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_signal_quality"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, rssi;
-    double error_rate;
+    std::string res;
+    response >> res;
 
-    response >> status;
-    response >> rssi;
-    response >> error_rate;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("N/A", rssi);
-    EXPECT_EQ(-1, error_rate);
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["rssi"], "N/A");
+    EXPECT_EQ(jsonResult["berPercentage"], "-1");
 }
 
 TEST(Ns_Suite, GetNetworkRegistrationStatus){
@@ -223,14 +201,12 @@ TEST(Ns_Suite, GetNetworkRegistrationStatus){
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(0)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_network_registration_status"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, urc_status, reg_status, location, cell_id, access_tech;
-    std::vector<std::string> regStatus;
-    response >> status;
-    response >> regStatus;
-    EXPECT_EQ("OK", status);
-    EXPECT_EQ("disabled", regStatus[0]);
-    EXPECT_EQ("not_registered", regStatus[1]);
-    EXPECT_EQ(2, regStatus.size());
+    std::string res;
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["registrationState"], "not_registered");
+    EXPECT_EQ(jsonResult["urcState"], "disabled");
 }
 
 TEST(Ns_Suite, GetNetworkRegistrationStatusError){
@@ -240,10 +216,9 @@ TEST(Ns_Suite, GetNetworkRegistrationStatusError){
     EXPECT_CALL(modem, sendCommand("AT+COPS?", 300)).Times(AtLeast(0)).WillRepeatedly(Return("\r\n\r\n+COPS: 0,0,\"Sunrise Sunrise\",7\r\n\r\nOK\r\n"));
     auto method = dbusProxy->createMethodCall(sdbus::InterfaceName{NS_DBUS_INTERFACE}, sdbus::MethodName{"get_network_registration_status"});
     auto response = dbusProxy->callMethod(method);
-    std::string status, urc_status, reg_status, location, cell_id, access_tech;
-    std::vector<std::string> regStatus;
-    response >> status;
-    response >> regStatus;
-    EXPECT_EQ("ERROR: Phone failure", status);
-    EXPECT_EQ(0, regStatus.size());
+    std::string res;
+    response >> res;
+
+    jsonResult = nlohmann::json::parse(res);
+    EXPECT_EQ(jsonResult["ERROR"], "Phone failure; command: AT+CREG?");
 }

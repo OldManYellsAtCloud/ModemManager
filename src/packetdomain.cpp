@@ -61,7 +61,7 @@ PacketDomain::PacketDomain(ModemConnection* modem, DbusManager* dbusManager): Co
         call >> state;
         std::string cmd = cmdDict[memberName];
         cmd += state ? "1" : "0";
-        int timeout = 14 * 1000;
+        int timeout = 140 * 1000;
         communicateWithModemAndSendResponse(call, cmd, timeout, parserDict[memberName]);
     };
 

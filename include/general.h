@@ -14,7 +14,8 @@ const std::map<std::string, std::string> FUNCTIONALITY_TO_VAL = {
     {"Minimum", "0"},
     {"Full", "1"},
     {"Disable", "4"},
-    {"Disabled", "4"}
+    {"Disabled", "4"},
+    {"Invalid", "-1"}
 };
 
 const std::map<std::string, std::string> VAL_TO_FUNCTIONALITY = {

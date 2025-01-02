@@ -10,7 +10,7 @@ void CommandBase::communicateWithModemAndSendResponse(sdbus::MethodCall call, st
     else
         modemResponse = this->m_modem->sendCommandAndExpectResponse(cmd, expectedResponse, timeout);
 
-    DBG("Modem raw response: {}", modemResponse);
+    LOG("Modem raw response: {}x", modemResponse);
     nlohmann::json json;
     if (isResponseSuccess(modemResponse)){
         std::map<std::string, std::string> parsedResponse = responseParser(modemResponse);
