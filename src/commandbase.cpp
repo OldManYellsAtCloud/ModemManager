@@ -1,16 +1,16 @@
 #include "commandbase.h"
-#include "loglibrary.h"
+#include <loglib/loglib.h>
 
 void CommandBase::communicateWithModemAndSendResponse(sdbus::MethodCall call, std::string cmd, ResponseParserLambda responseParser,
                                      int timeout, std::string expectedResponse) {
-    LOG("Modem comm - cmd: {}, timeout: {}, expected response: {}", cmd, timeout, expectedResponse);
+    LOG_INFO_F("Modem comm - cmd: {}, timeout: {}, expected response: {}", cmd, timeout, expectedResponse);
     std::string modemResponse;
     if (expectedResponse.empty())
         modemResponse = this->m_modem->sendCommand(cmd, timeout);
     else
         modemResponse = this->m_modem->sendCommandAndExpectResponse(cmd, expectedResponse, timeout);
 
-    LOG("Modem raw response: {}x", modemResponse);
+    LOG_INFO_F("Modem raw response: {}x", modemResponse);
     nlohmann::json json;
     if (isResponseSuccess(modemResponse)){
         std::map<std::string, std::string> parsedResponse = responseParser(modemResponse);
@@ -22,7 +22,7 @@ void CommandBase::communicateWithModemAndSendResponse(sdbus::MethodCall call, st
     }
 
     auto dbusResponse = call.createReply();
-    LOG("Sending modem response: {}", json.dump());
+    LOG_INFO_F("Sending modem response: {}", json.dump());
     dbusResponse << json.dump();
     dbusResponse.send();
 }

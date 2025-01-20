@@ -1,6 +1,5 @@
 #include "packetdomain.h"
 #include "responseextractors.h"
-#include <loglibrary.h>
 
 void PacketDomain::initParsers()
 {

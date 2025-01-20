@@ -1,5 +1,5 @@
 #include "dbusmanager.h"
-#include <loglibrary.h>
+#include <loglib/loglib.h>
 
 #include <thread>
 
@@ -15,21 +15,21 @@ DbusManager::~DbusManager()
 
 void DbusManager::registerSignal(std::string interface, std::string name, std::string signature)
 {
-    LOG("Registering dbus signal. Iface: {}, name: {}, signature: {}",
+    LOG_INFO_F("Registering dbus signal. Iface: {}, name: {}, signature: {}",
         interface, name, signature);
     dbusObject->addVTable(sdbus::SignalVTableItem{sdbus::MethodName{name}, sdbus::Signature{signature}, {}}).forInterface(sdbus::InterfaceName{interface});
 }
 
 void DbusManager::registerMethod(std::string interface, std::string name, std::string inputSignature, std::string outputSignature, sdbus::method_callback callback)
 {
-    LOG("Registering dbus method. Iface: {}, name: {}, iSignature: {}, oSignature: {}",
+    LOG_INFO_F("Registering dbus method. Iface: {}, name: {}, iSignature: {}, oSignature: {}",
         interface, name, inputSignature, outputSignature);
     dbusObject->addVTable(sdbus::MethodVTableItem{sdbus::MethodName{name}, sdbus::Signature{inputSignature}, {}, sdbus::Signature{outputSignature}, {}, callback}).forInterface(sdbus::InterfaceName{interface});
 }
 
 void DbusManager::signalCompletenessAndEnterEventLoop()
 {
-    LOG("Entering infinite dbus event loop");
+    LOG_INFO_F("Entering infinite dbus event loop");
     auto t = std::thread(&DbusManager::sendReadySignal, this);
     eventLoopStarted = true;
     dbusConnection->enterEventLoop();
@@ -38,7 +38,7 @@ void DbusManager::signalCompletenessAndEnterEventLoop()
 #ifdef TEST_ENABLED
 void DbusManager::signalCompletenessAndEnterEventLoopAsync()
 {
-    LOG("Entering dbus event loop async");
+    LOG_INFO("Entering dbus event loop async");
     auto t = std::thread(&DbusManager::sendReadySignal, this);
     eventLoopStarted = true;
     dbusConnection->enterEventLoopAsync();

@@ -1,6 +1,4 @@
 #include "hardware.h"
-#include <loglibrary.h>
-
 
 void Hardware::initParsers(){
     auto setLPParser = [](const std::string& s){

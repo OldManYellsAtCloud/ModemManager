@@ -1,6 +1,6 @@
 #include "networkservice.h"
 #include "responseextractors.h"
-#include <loglibrary.h>
+#include <loglib/loglib.h>
 
 // This dictionary is the representation of the
 // RxQual/bit error rate classes, according to
@@ -148,7 +148,7 @@ std::string NetworkService::extractNetworkUrcState(std::string s)
         int i = std::stoi(s);
         return extractNetworkUrcState(i);
     } catch (std::exception e) {
-        ERROR("Could not extract URC state: {}, error: {}", s, e.what());
+        LOG_ERROR_F("Could not extract URC state: {}, error: {}", s, e.what());
     }
     return "N/A";
 }
@@ -166,7 +166,7 @@ std::string NetworkService::extractRegistrationState(std::string s)
         int i = std::stoi(s);
         return extractRegistrationState(i);
     } catch (std::exception e) {
-        ERROR("Could not extract network registration state: {}, error: {}", s, e.what());
+        LOG_ERROR_F("Could not extract network registration state: {}, error: {}", s, e.what());
     }
     return "N/A";
 }
@@ -184,7 +184,7 @@ std::string NetworkService::extractAccessTechnology(std::string s)
         int i = std::stoi(s);
         return extractRegistrationState(i);
     } catch (std::exception e) {
-        ERROR("Could not extract access technology: {}, error: {}", s, e.what());
+        LOG_ERROR_F("Could not extract access technology: {}, error: {}", s, e.what());
     }
     return "N/A";
 }
@@ -206,7 +206,7 @@ std::string NetworkService::getOperatorFromResponse(const std::string &response)
     // Extract the first word from the 3rd section
     std::vector<std::string> splitResponse = splitString(response, ",");
     if (splitResponse.size() < 2){
-        ERROR("Could not extract operator from response: {}", response);
+        LOG_ERROR_F("Could not extract operator from response: {}", response);
         return "";
     }
     std::vector<std::string> splitOperator = splitString(splitResponse[2], " ");
@@ -252,7 +252,7 @@ std::string NetworkService::extractRssi(std::string s)
         int i = std::stoi(s);
         return extractRssi(i);
     } catch (std::exception e) {
-        ERROR("Unparsable RSSI value: {}. Error: {}", s, e.what());
+        LOG_ERROR_F("Unparsable RSSI value: {}. Error: {}", s, e.what());
     }
     return extractRssi(99);
 }
@@ -273,7 +273,7 @@ double NetworkService::extractBerAverage(std::string s)
         int i = std::stoi(s);
         return extractBerAverage(i);
     } catch (std::exception e){
-        ERROR("Unparsable BER value: {}. Error: {}", s, e.what());
+        LOG_ERROR_F("Unparsable BER value: {}. Error: {}", s, e.what());
     }
     return extractBerAverage(99);
 }

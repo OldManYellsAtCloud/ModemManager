@@ -1,8 +1,6 @@
 #include "simcard.h"
 #include "responseextractors.h"
 
-#include <loglibrary.h>
-
 SimCard::SimCard(ModemConnection* modem, DbusManager* dbusManager): CommandBase{modem, dbusManager}
 {
     initParsers();

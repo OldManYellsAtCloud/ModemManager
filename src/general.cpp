@@ -1,6 +1,5 @@
 #include "general.h"
 #include "responseextractors.h"
-#include <loglibrary.h>
 
 void General::initCmds()
 {

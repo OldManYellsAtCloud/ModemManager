@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 REQUIRED COMPONENTS SerialPort)
 find_package(sdbus-c++ REQUIRED)
 find_package(SettingsLib)
-find_package(LogLibrary)
+find_package(loglib REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
 set(SOURCES src/eg25connection.cpp
@@ -62,7 +62,7 @@ install(FILES org.gspine.modem.conf
     DESTINATION /etc/dbus-1/system.d/
 )
 
-target_link_libraries(modemmanager PRIVATE SettingsLib Qt6::SerialPort sdbus-c++)
+target_link_libraries(modemmanager PRIVATE SettingsLib Qt6::SerialPort sdbus-c++ loglib)
 
 option(enable_test "Compile and run tests" OFF)
 option(no_test_left_behind "Include even the disabled tests" OFF)

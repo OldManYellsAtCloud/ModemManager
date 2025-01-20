@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <cassert>
 #include <settingslib.h>
-#include <loglibrary.h>
+#include <loglib/loglib.h>
 
 #include "eg25connection.h"
 #include "dbusmanager.h"
@@ -38,6 +38,9 @@ void displayUi(int argc, char* argv[]){
 
 int main(int argc, char* argv[])
 {
+    loglib::logger().setName("modemmanager");
+    loglib::logger().registerLogger(logging::LOGGER_FILE);
+
     bool debugMode = false;
     bool logRequests = false;
     SettingsLib settings {CONFIG_FOLDER};
@@ -50,7 +53,7 @@ int main(int argc, char* argv[])
         else if (strncmp(argv[i], "--logRequests", 13) == 0)
             logRequests = true;
         else
-            LOG("Unknown argument: {}", argv[i]);
+            LOG_INFO_F("Unknown argument: {}", argv[i]);
     }
 
     eg25Connection modem{modemPath, logRequests};

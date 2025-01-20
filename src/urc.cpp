@@ -1,6 +1,6 @@
 #include "urc.h"
 #include <chrono>
-#include <loglibrary.h>
+#include <loglib/loglib.h>
 
 Urc::Urc(ModemConnection *modem, DbusManager *dbusManager): m_modem{modem}, m_dbusManager{dbusManager}
 {
@@ -10,7 +10,7 @@ Urc::Urc(ModemConnection *modem, DbusManager *dbusManager): m_modem{modem}, m_db
 
 Urc::~Urc()
 {
-    LOG("Urc object done");
+    LOG_INFO("Urc object done");
     urcThread.request_stop();
 }
 

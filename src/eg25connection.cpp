@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 #include <QtSerialPort/QSerialPortInfo>
-#include <loglibrary.h>
+#include <loglib/loglib.h>
 #include <chrono>
 
 #define MAX_TIMEOUT_S 100.0
@@ -69,7 +69,7 @@ std::string eg25Connection::getResponse(int timeout){
         }
     } while (timeNow() - startTimeMs < timeout);
 
-    DBG("Have not received a response before {}ms timeout!", timeout);
+    LOG_DEBUG_F("Have not received a response before {}ms timeout!", timeout);
 
     return "";
 }
@@ -82,7 +82,7 @@ void eg25Connection::logModemData(std::string s)
     if (!enableLogging_)
         return;
 
-    LOG("Modem data: {}", s);
+    LOG_INFO_F("Modem data: {}", s);
 }
 
 void eg25Connection::writeData(std::string cmd)
@@ -92,12 +92,12 @@ void eg25Connection::writeData(std::string cmd)
 
     auto writeRes = serialPort->write(cmd.c_str());
     if (writeRes != cmd.length()){
-        ERROR("Could not send all bytes to modem! Sent bytes: {}, actual length: {}",
+        LOG_ERROR_F("Could not send all bytes to modem! Sent bytes: {}, actual length: {}",
               writeRes, cmd.length());
     }
 
     if (!serialPort->waitForBytesWritten()){
-        ERROR("Could not write the payload to the modem!");
+        LOG_ERROR("Could not write the payload to the modem!");
     }
 }
 
@@ -137,7 +137,7 @@ std::string eg25Connection::sendCommandAndExpectResponse(std::string cmd, std::s
         }
     }
 
-    ERROR("Something is not right, could not find the expected response '{}' in the message '{}'. "
+    LOG_ERROR_F("Something is not right, could not find the expected response '{}' in the message '{}'. "
           "Please fix your program.", expectedResponse, response);
     return response;
 }
